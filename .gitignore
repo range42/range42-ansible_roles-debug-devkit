@@ -1,0 +1,9 @@
+
+inventory/
+# secrets and ansible vault 
+secrets/
+# private playbooks
+private-playbooks/
+# others
+*.retry
+logs/
