@@ -4,6 +4,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 showExample() {
+  echo
   echo "  $(basename "$0") key1,key2"
   echo "  echo '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\"}' | $(basename "$0") \"key1,key2\""
   echo "  echo '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\"}' | $(basename "$0") key1"
@@ -28,8 +29,8 @@ fi
 
 # check arguments
 if [ $# -ne 1 ]; then
-  echo ":: error: args :: wrong number of arguments." >&2
-  echo "Run '$(basename "$0") --help' for usage." >&2
+  devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+  showExample
   exit 1
 fi
 
