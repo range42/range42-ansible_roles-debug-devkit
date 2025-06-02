@@ -4,23 +4,22 @@
 
 set -euo pipefail
 
-ACTION="vm_pause"
+ACTION="vm_stop"
 DEFAULT_OUTPUT_JSON=true
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
   echo ""
-  echo "$(basename "$0") VM_ID"
-  echo "$(basename "$0") 24242"
-  echo "$(basename "$0") 34242"
+  echo "$(basename "$0") "
   echo ""
 }
 
-if [ "$1" = '-h' ] ||
-  [ "$1" = '--help' ]; then
+if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
+
   echo NAME
-  echo "  $(basename "$0") - Pause vm_id vm - Execute the specified $ACTION action via Ansible "
+
+  echo "  $(basename "$0") - Stop all vm - Execute the specified $ACTION action via Ansible (all vms) "
   echo
   echo SYNOPSIS
   echo "  $(basename "$0") [-h|--help] "
@@ -34,22 +33,10 @@ fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-ARG_VM_ID="${1:-}"
-
-if [[ -z "$ARG_VM_ID" ]]; then
-  echo ""
-  echo ":: ERROR :: no vm id provied."
-  echo ""
-  showExample
-
-  exit 1
-fi
-
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-
 devkit_ansible.proxmox_controller._inc.warmup_checks.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
 #
 # check if role can be found in ANSIBLE_ROLES_PATH
 #
@@ -86,15 +73,29 @@ esac
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 if [[ "$OUTPUT_JSON" == true ]]; then
-  devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh \
-    "$ACTION" "$ARG_VM_ID" --json 
-    # |
+
+  # for VM_ID in $(
+  #   devkit_ansible.proxmox_controller.vm_list.to.jsons.sh |
+  #     jq -r '. | select (.vm_status=="running") | .vm_id'
+  # ); do
+
+  for VM_ID in $(devkit_ansible.proxmox_controller.vm_list_running_and_extract_vm_id.to.text.sh); do
+
+    devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh \
+      "$ACTION" "$VM_ID" --json
+    #  |
     # jq --arg action "$ACTION" '
-    #     .plays[].tasks[] 
-    #     | .hosts[] 
-    #     | select(type=="object" and has($action)) 
-    #     | .[$action]
-    #   '
+    #   .plays[].tasks[]
+    #   | .hosts[]
+    #   | select(type=="object" and has($action))
+    #   | .[$action]
+    # '
+
+    sleep 7 # ACPI shutdown take few seconds...
+    echo " :: stopping :: $VM_ID " 1>&2
+
+  done
+
 else
 
   devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh \
