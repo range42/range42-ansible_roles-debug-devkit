@@ -117,6 +117,7 @@ fi
 #
 # open vault - look for ansible-agent
 #
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 if [[ -f $DEFAULT_OPEN_VAULT_PW_FILE_PATH ]]; then
   ANSIBLE_VAULT_ARG=(--vault-password-file "$DEFAULT_OPEN_VAULT_PW_FILE_PATH")
