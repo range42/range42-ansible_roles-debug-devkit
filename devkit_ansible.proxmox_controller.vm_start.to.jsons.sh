@@ -45,14 +45,24 @@ if [[ -z "$ARG_VM_ID" ]]; then
   exit 1
 fi
 
-#
-# check if role can be found in ANSIBLE_ROLES_PATH
-#
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-if [[ -z "${ANSIBLE_ROLES_PATH:-}" ]]; then
-  echo ":: ENV_ERROR ::  ANSIBLE_ROLES_PATH not defined"
-  exit 1
-fi
+devkit_ansible.proxmox_controller._inc.warmup_checks.sh
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
+# #
+# # check if role can be found in ANSIBLE_ROLES_PATH
+# #
+
+# if [[ -z "${ANSIBLE_ROLES_PATH:-}" ]]; then
+#   echo ":: ENV_ERROR ::  ANSIBLE_ROLES_PATH not defined"
+#   exit 1
+# fi
+
+#
+# define output type
+#
 
 OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
 
@@ -78,13 +88,14 @@ esac
 
 if [[ "$OUTPUT_JSON" == true ]]; then
   devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh \
-    "$ACTION" "$ARG_VM_ID" --json |
-    jq --arg action "$ACTION" '
-        .plays[].tasks[] 
-        | .hosts[] 
-        | select(type=="object" and has($action)) 
-        | .[$action]
-      '
+    "$ACTION" "$ARG_VM_ID" --json
+  # |
+  # jq --arg action "$ACTION" '
+  #     .plays[].tasks[]
+  #     | .hosts[]
+  #     | select(type=="object" and has($action))
+  #     | .[$action]
+  #   '
 else
 
   devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh \

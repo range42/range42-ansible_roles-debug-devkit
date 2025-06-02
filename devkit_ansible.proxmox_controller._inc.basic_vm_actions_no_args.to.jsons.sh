@@ -1,13 +1,5 @@
 #!/bin/bash
 
-showExample() {
-  echo ""
-  echo "$(basename "$0") VM_ID"
-  echo "$(basename "$0") 24242"
-  echo "$(basename "$0") 34242"
-  echo ""
-}
-
 if [ "$1" = '-h' ] ||
   [ "$1" = '--help' ]; then
   echo NAME
@@ -15,8 +7,8 @@ if [ "$1" = '-h' ] ||
   echo
   echo SYNOPSIS
   echo "  $(basename "$0") [-h|--help] [URL]"
-  echo "  $(basename "$0") [VM_ID] [--json] - force output as json "
-  echo "  $(basename "$0") [VM_ID] [--text] - force output as text"  
+  echo "  $(basename "$0") [ACTION] [--json] - force output as json "
+  echo "  $(basename "$0") [ACTION] [--text] - force output as text"
   echo ""
   echo EXAMPLE
   echo "  $(showExample)"
@@ -29,6 +21,7 @@ set -euo pipefail
 
 ROLE_NAME="range42-ansible_roles-proxmox_controller"
 DEFAULT_OUTPUT_JSON=true
+DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
 
 ARG_ACTION="${1:-}"
 # ARG_VM_ID="${2:-}"
@@ -74,16 +67,21 @@ esac
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-# check if role can be found in ANSIBLE_ROLES_PATH
-if [[ -z "${ANSIBLE_ROLES_PATH:-}" ]]; then
-  echo ""
-  echo ":: ENV_ERROR :: ANSIBLE_ROLES_PATH not defined"
-  echo ""
-  exit 1
-fi
+devkit_ansible.proxmox_controller._inc.warmup_checks.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-#check output type.
+
+# # check if role can be found in ANSIBLE_ROLES_PATH
+# if [[ -z "${ANSIBLE_ROLES_PATH:-}" ]]; then
+#   echo ""
+#   echo ":: ENV_ERROR :: ANSIBLE_ROLES_PATH not defined"
+#   echo ""
+#   exit 1
+# fi
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+#
+# check output type.
 
 OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
 
@@ -97,9 +95,11 @@ case "${3:-}" in
 
 "") ;;
 *)
-  echo ":: ERROR :: invalid argument.  '$2'." >&2
+
+  devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "invalid arguments '$2'"
 
   ;;
+
 esac
 
 if [[ "$OUTPUT_JSON" == true ]]; then
@@ -107,6 +107,21 @@ if [[ "$OUTPUT_JSON" == true ]]; then
 else
   # CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped.cfg"
   CURRENT_ANSIBLE_CONFIG="./ansible.cfg"
+fi
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+#
+# open vault - look for ansible-agent
+#
+
+if [[ -f $DEFAULT_OPEN_VAULT_PW_FILE_PATH ]]; then
+  ANSIBLE_VAULT_ARG=(--vault-password-file "$DEFAULT_OPEN_VAULT_PW_FILE_PATH")
+
+else
+
+  OPEN_VAULT_PW_FILE_PATH=$(devkit_ansible.open_vault.to.file.sh)
+  ANSIBLE_VAULT_ARG=(--vault-password-file "$OPEN_VAULT_PW_FILE_PATH")
+
 fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -122,7 +137,8 @@ fi
   # ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg" \
   ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG" \
     ansible-playbook -i "$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
-    --ask-vault-pass /dev/stdin <<EOF
+    "${ANSIBLE_VAULT_ARG[@]}" \
+    /dev/stdin <<EOF
 
 - hosts: px-testing
   gather_facts: false
@@ -137,11 +153,23 @@ fi
         
       
 EOF
+) | jq --arg action "$ARG_ACTION" '
+        .plays[].tasks[]
+        | .hosts[]
+        | select(type=="object" and has($action))
+        | .[$action]
+      ' | jq '.[]'
 
-) 
+# | jq --arg action "vm_list" '
+#         .plays[].tasks[]
+#         | .hosts[]
+#         | select(type=="object" and has($action))
+#         | .[$action]
+#         '
 
-
-#   .plays[].tasks[]
-# | .hosts["px-testing"]
-# | select(type == "object" and has("vm_list"))
-# | .vm_list[] '
+# ) | jq --arg action "$ARG_ACTION" '
+#         .plays[].tasks[]
+#         | .hosts[]
+#         | select(type=="object" and has($action))
+#         | .[$action]
+#       '
