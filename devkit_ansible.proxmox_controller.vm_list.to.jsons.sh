@@ -40,11 +40,6 @@ fi
 
 devkit_ansible.proxmox_controller._inc.warmup_checks.sh
 
-# if [[ -z "${ANSIBLE_ROLES_PATH:-}" ]]; then
-#   echo ":: ENV_ERROR ::  ANSIBLE_ROLES_PATH not defined"
-#   exit 1
-# fi
-
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
 # browse provided arugments :
@@ -64,7 +59,8 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -*)
-    echo ":: ERROR :: bad arguments: '$1'." 1>&2
+    devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+    showExample
     exit 1
     ;;
   *)
@@ -72,7 +68,8 @@ while [[ $# -gt 0 ]]; do
       ARG_VM_NAME_FILTER="$1"
       shift
     else
-      echo ":: ERROR :: bad arguments: '$1'." 1>&2
+      devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+      showExample
       exit 1
     fi
     ;;
@@ -85,40 +82,6 @@ done
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-# TODO :  add arg for host.
-# #
-# (
-#   devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh "$ACTION" |
-#     jq \
-#       --arg jqa_ACTION "$ACTION" \
-#       '
-#       .plays[].tasks[]
-#         | .hosts[]
-#         | select(type == "object" and has($jqa_ACTION))
-#         | .vm_list[]
-#         ' |
-#     jq '
-#       {
-#           vm_name:    (.name                 // "?"),
-#           vm_status:  (.status               // "?"),
-#           vm_id:      (.vmid                 // "?"),
-#           vm_uptime:  (.uptime               // "?"),
-#           vm_meta: {
-#             cpu_current_usage:   (.cpu       // "?"),
-#             cpu_allocated:       (.cpus      // "?"),
-#             disk_current_usage:  (.disk      // "?"),
-#             disk_read:           (.diskread  // "?"),
-#             disk_write:          (.diskwrite // "?"),
-#             disk_max:            (.maxdisk   // "?"),
-#             ram_current_usage:   (.mem       // "?"),
-#             ram_max:             (.maxmem    // "?"),
-#             net_in:              (.netin     // "?"),
-#             net_out:             (.netout    // "?")
-#           }
-#       }' |
-#     devkit_generic.tr.jsons.remove_key.to.jsons.sh "vm_meta"
-# )
-
 if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
 
   if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
@@ -128,26 +91,6 @@ if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
         "$ACTION" --json |
         devkit_generic.tr.jsons.remove_key.to.jsons.sh "vm_meta" |
         devkit_generic.tr.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER"
-      #   "$ACTION" --json |
-      #   jq --arg action "$ACTION" '
-      #   .plays[].tasks[]
-      #   | .hosts[]
-      #   | select(type=="object" and has($action))
-      #   | .[$action]
-      # ' |
-      #   jq ".[]" |
-
-      # devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-      #   "$ACTION" --json |
-      #   jq --arg action "$ACTION" '
-      #   .plays[].tasks[]
-      #   | .hosts[]
-      #   | select(type=="object" and has($action))
-      #   | .[$action]
-      # ' |
-      #   jq ".[]" |
-      #   devkit_generic.tr.jsons.remove_key.to.jsons.sh "vm_meta" |
-      #   devkit_generic.tr.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER"
     )
 
   else # not filter in argument
@@ -155,20 +98,7 @@ if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
       devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
         "$ACTION" --json |
         devkit_generic.tr.jsons.remove_key.to.jsons.sh "vm_meta"
-      # jq ".[]" |
     )
-    # (
-    #   devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-    #     "$ACTION" --json |
-    #     jq --arg action "$ACTION" '
-    #     .plays[].tasks[]
-    #     | .hosts[]
-    #     | select(type=="object" and has($action))
-    #     | .[$action]
-    #   ' |
-    #     jq ".[]" |
-    #     devkit_generic.tr.jsons.remove_key.to.jsons.sh "vm_meta"
-    # )
   fi
 else # text output mode  - debug
 

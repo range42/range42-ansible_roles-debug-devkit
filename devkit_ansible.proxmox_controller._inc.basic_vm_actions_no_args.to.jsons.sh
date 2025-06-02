@@ -70,18 +70,10 @@ esac
 devkit_ansible.proxmox_controller._inc.warmup_checks.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-
-# # check if role can be found in ANSIBLE_ROLES_PATH
-# if [[ -z "${ANSIBLE_ROLES_PATH:-}" ]]; then
-#   echo ""
-#   echo ":: ENV_ERROR :: ANSIBLE_ROLES_PATH not defined"
-#   echo ""
-#   exit 1
-# fi
-
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
 # check output type.
+#
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
 
