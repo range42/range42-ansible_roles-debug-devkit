@@ -101,7 +101,6 @@ if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
 else
 
   (
-    devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-      "$ACTION" --text
+    devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.text.sh "$ACTION"
   )
 fi

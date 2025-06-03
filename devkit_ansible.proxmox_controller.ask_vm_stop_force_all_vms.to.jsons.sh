@@ -6,14 +6,13 @@ set -euo pipefail
 
 ACTION="vm_stop_force"
 DEFAULT_OUTPUT_JSON=true
-
+ARG_VM_NAME_FILTER=""
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
-  echo ""
+  echo
   echo "$(basename "$0") "
-
-  echo ""
+  echo
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
@@ -43,7 +42,7 @@ devkit_ansible.proxmox_controller._inc.warmup_checks.sh
 
 OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
 
-case "${2:-}" in
+case "${1:-}" in
 --json)
   OUTPUT_JSON=true
   ;;
@@ -52,9 +51,14 @@ case "${2:-}" in
   ;;
 "") ;;
 *)
-  devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-  showExample
-  exit 1
+  if [[ -z "$ARG_VM_NAME_FILTER" ]]; then
+    ARG_VM_NAME_FILTER="$1"
+    shift
+  else
+    devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+    showExample
+    exit 1
+  fi
   ;;
 esac
 
@@ -64,24 +68,55 @@ esac
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-for VM_ID in $(devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh); do
+# for VM_ID in $(devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh); do
 
-  if [[ "$OUTPUT_JSON" == true ]]; then
+#   if [[ "$OUTPUT_JSON" == true ]]; then
 
-    (
-      echo "$VM_ID" | devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh \
-        "$ACTION" --json
-    )
+#     (
+#       echo "$VM_ID" |
+#         devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION"
+#     )
 
-  else
+#   else
 
-    (
-      echo "$VM_ID" | devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh \
-        "$ACTION" --text
-    )
+#     (
+#       echo "$VM_ID" |
+#         devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.text.sh "$ACTION"
+#     )
+#   fi
+
+#   devkit_generic.utils.text.echo_pass.to.text.to.stderr.sh "stopping :: $VM_ID "
+#   sleep 1 #
+
+# done
+
+IFS=$'\n'
+
+for VM_ID in $(
+
+  if [[ -n "$ARG_VM_NAME_FILTER" ]]; then
+    devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$ARG_VM_NAME_FILTER" 
+      else
+    devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh
   fi
 
-  devkit_generic.utils.text.echo_pass.to.text.to.stderr.sh "stopping :: $VM_ID "
-  sleep 1 #
+); do
+
+  ####
+
+  if [[ "$OUTPUT_JSON" == true ]]; then
+    (
+      echo "$VM_ID" |
+        devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION"
+    )
+  else
+    (
+      echo "$VM_ID" |
+        devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.text.sh "$ACTION"
+    )
+    devkit_generic.utils.text.echo_pass.to.text.to.stderr.sh "stopping :: $VM_ID"
+    sleep 3
+
+  fi
 
 done

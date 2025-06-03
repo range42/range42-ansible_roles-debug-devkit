@@ -87,24 +87,25 @@ if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
   if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
 
     (
-      devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-        "$ACTION" --json |
+      devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq '.[]' |
         devkit_generic.tr.jsons.remove_key.to.jsons.sh "vm_meta" |
         devkit_generic.tr.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER"
     )
 
   else # not filter in argument
+
     (
-      devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-        "$ACTION" --json |
+      devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq '.[]' |
         devkit_generic.tr.jsons.remove_key.to.jsons.sh "vm_meta"
     )
+    
   fi
 else # text output mode  - debug
 
   (
-    devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-      "$ACTION" --text
+    devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.text.sh "$ACTION"
   )
 
 fi

@@ -88,7 +88,6 @@ if [[ "$OUTPUT_JSON" == true ]]; then
     (
       devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh "$ARG_VM_NAME_FILTER" |
         devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'stopped'
-
     )
 
   else
@@ -96,15 +95,12 @@ if [[ "$OUTPUT_JSON" == true ]]; then
     (
       devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh |
         devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'stopped'
-
     )
-
   fi
 
 else # text output mode  - debug
 
   (
-    devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-      "$ACTION" --text
+    devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.text.sh "$ACTION"
   )
 fi

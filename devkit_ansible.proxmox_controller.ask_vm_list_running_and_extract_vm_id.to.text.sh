@@ -4,8 +4,9 @@
 
 set -euo pipefail
 ACTION="vm_list"
-DEFAULT_OUTPUT_JSON=true
-ARG_VM_NAME_FILTER=""
+
+ARG_VM_NAME_FILTER="${1:-}"
+
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
@@ -40,54 +41,24 @@ devkit_ansible.proxmox_controller._inc.warmup_checks.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
-# check output type.
-#
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-
-OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
-
-case "${1:-}" in
---json)
-  OUTPUT_JSON=true
-  ;;
---text)
-  OUTPUT_JSON=false
-  ;;
-
-"") ;;
-*)
-  devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-  showExample
-  exit 1
-
-  ;;
-esac
-
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-#
 # inc lib script call.
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-if [[ "$OUTPUT_JSON" == true ]]; then
-
-  if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
-
-    (
-      devkit_ansible.proxmox_controller.ask_vm_list_running.to.jsons.sh "$ARG_VM_NAME_FILTER" |
-        jq -r '. | select (.vm_status=="running") | .vm_id'
-    )
-
-  else
-    (
-      devkit_ansible.proxmox_controller.ask_vm_list_running.to.jsons.sh |
-        jq -r '. | select (.vm_status=="running") | .vm_id'
-    )
-  fi
-else
+if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
 
   (
-    devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-      "$ACTION" --text
+    devkit_ansible.proxmox_controller.ask_vm_list_running.to.jsons.sh "$ARG_VM_NAME_FILTER" |
+      devkit_generic.tr.jsons.key_field_select.to.jsons.sh "vm_status" "running" |
+      jq -r '.vm_id'
+    #  |
+    #   jq -r ' | select (.vm_status=="running") | .vm_id'
+  )
+
+else
+  (
+    devkit_ansible.proxmox_controller.ask_vm_list_running.to.jsons.sh |
+      devkit_generic.tr.jsons.key_field_select.to.jsons.sh "vm_status" "running" |
+      jq -r '.vm_id'
   )
 fi
