@@ -29,11 +29,13 @@ fi
 set -euo pipefail
 ROLE_NAME="range42-ansible_roles-proxmox_controller"
 DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
+
 # CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
-CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible_no_skipped_json.cfg"
+# CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped.cfg"
+CURRENT_ANSIBLE_CONFIG="./ansible.cfg"
+CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible.cfg"
 
 ARG_ACTION="${1:-}"
-# ARG_VM_ID="${2:-}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -65,8 +67,6 @@ IFS=$'\n'
 
 for VM_ID in $(cat - | tr -d '[:space:]'); do
 
-  # note <<-EOF - delete should remove tab from pass to stdin.
-
   # devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "from stdin $VM_ID"
 
   (
@@ -87,15 +87,9 @@ for VM_ID in $(cat - | tr -d '[:space:]'); do
         name: $ROLE_NAME
       vars:
         proxmox_vm_action: "$ARG_ACTION"
-        proxmox_vmid: $VM_ID
+        proxmox_vmid: !!int $VM_ID
       
 EOF
-  ) | jq -c --arg action "$ARG_ACTION" '
-         .plays[].tasks[] 
-        | .hosts[] 
-        | select(type=="object" and has($action))
-        | .[$action]
-      '
-  # jq -c '.[]'
+  )
 
 done
