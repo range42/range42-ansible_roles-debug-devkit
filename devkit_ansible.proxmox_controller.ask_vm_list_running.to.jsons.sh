@@ -87,13 +87,13 @@ if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
   if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
 
     (
-      devkit_ansible.proxmox_controller.vm_list.to.jsons.sh "$ARG_VM_NAME_FILTER" |
+      devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh "$ARG_VM_NAME_FILTER" |
         devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'running'
     )
 
   else
     (
-      devkit_ansible.proxmox_controller.vm_list.to.jsons.sh |
+      devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh |
         devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'running'
     )
 

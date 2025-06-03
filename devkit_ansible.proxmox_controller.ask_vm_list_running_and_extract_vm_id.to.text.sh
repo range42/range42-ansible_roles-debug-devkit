@@ -5,7 +5,7 @@
 set -euo pipefail
 ACTION="vm_list"
 DEFAULT_OUTPUT_JSON=true
-
+ARG_VM_NAME_FILTER=""
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
@@ -74,13 +74,13 @@ if [[ "$OUTPUT_JSON" == true ]]; then
   if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
 
     (
-      devkit_ansible.proxmox_controller.vm_list_running.to.jsons "$ARG_VM_NAME_FILTER" |
+      devkit_ansible.proxmox_controller.ask_vm_list_running.to.jsons.sh "$ARG_VM_NAME_FILTER" |
         jq -r '. | select (.vm_status=="running") | .vm_id'
     )
 
   else
     (
-      devkit_ansible.proxmox_controller.vm_list_running.to.jsons |
+      devkit_ansible.proxmox_controller.ask_vm_list_running.to.jsons.sh |
         jq -r '. | select (.vm_status=="running") | .vm_id'
     )
   fi

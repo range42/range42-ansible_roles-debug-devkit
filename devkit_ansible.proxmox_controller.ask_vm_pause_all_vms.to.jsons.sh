@@ -10,26 +10,22 @@ DEFAULT_OUTPUT_JSON=true
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
-  echo
-  echo "echo 4242 | $(basename "$0")"
-  echo "echo 4242 | $(basename "$0") --json"
-  echo "echo 4242 | $(basename "$0") --text"
-  echo "cat /tmp/VM_ID | $(basename "$0")"
-  echo
-  echo "devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
-  echo "devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
-  echo
+  echo ""
+  echo "$(basename "$0") "
+
+  echo ""
 }
 
-if [ "$1" = '-h' ] ||
-  [ "$1" = '--help' ]; then
+if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
+
   echo NAME
-  echo "  $(basename "$0") - Pause vm_id vm - Execute the specified $ACTION action via Ansible "
+
+  echo "  $(basename "$0") - Pause all vm - Execute the specified $ACTION action via Ansible (all vms) "
   echo
   echo SYNOPSIS
   echo "  $(basename "$0") [-h|--help] "
-  echo "  stdin|echo|cat| [VM_ID] | $(basename "$0")  [--json] - force output as json *default"
-  echo "  stdin|echo|cat| [VM_ID] | $(basename "$0")  [--text] - force output as text"
+  echo "  $(basename "$0") [VM_ID] [--json] - force output as json "
+  echo "  $(basename "$0") [VM_ID] [--text] - force output as text"
   echo ""
   echo EXAMPLE
   echo "  $(showExample)"
@@ -39,9 +35,8 @@ fi
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 devkit_ansible.proxmox_controller._inc.warmup_checks.sh
-devkit_ansible.proxmox_controller._inc.warmup_checks_stdin.sh
 
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
 # define output type
 #
@@ -65,24 +60,27 @@ case "${2:-}" in
 esac
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-#
+#I
 # inc lib script call.
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-IFS=$'\n'
-for VM_ID in $(cat - | tr -d '[:space:]'); do
+for VM_ID in $(devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh); do
 
   if [[ "$OUTPUT_JSON" == true ]]; then
+
     (
       echo "$VM_ID" | devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh \
         "$ACTION" --json
     )
+
   else
+
     (
       echo "$VM_ID" | devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh \
         "$ACTION" --text
     )
+    devkit_generic.utils.text.echo_pass.to.text.to.stderr.sh "stopping :: $VM_ID "
+    sleep 3 #
   fi
-
 done

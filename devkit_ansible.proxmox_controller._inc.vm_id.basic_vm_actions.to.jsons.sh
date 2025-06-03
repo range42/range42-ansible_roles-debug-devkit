@@ -139,7 +139,7 @@ IFS=$'\n'
 
 for VM_ID in $(cat - | tr -d '[:space:]'); do
 
-  devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "revceived $VM_ID"
+  # devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "from stdin $VM_ID"
 
   (
     # ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"

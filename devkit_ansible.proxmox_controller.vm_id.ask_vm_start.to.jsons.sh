@@ -15,8 +15,8 @@ showExample() {
   echo "echo 4242 | $(basename "$0") --text"
   echo "cat /tmp/VM_ID | $(basename "$0")"
   echo
-  echo "devkit_ansible.proxmox_controller.vm_list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
-  echo "devkit_ansible.proxmox_controller.vm_list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
+  echo "devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
+  echo "devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
   echo
 }
 

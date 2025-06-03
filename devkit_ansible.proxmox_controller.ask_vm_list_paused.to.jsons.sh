@@ -5,7 +5,7 @@
 set -euo pipefail
 ACTION="vm_list"
 DEFAULT_OUTPUT_JSON=true
-
+ARG_VM_NAME_FILTER=""
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
@@ -73,7 +73,7 @@ esac
 if [[ "$OUTPUT_JSON" == true ]]; then
   if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
     (
-      devkit_ansible.proxmox_controller.vm_list.to.jsons.sh "$ARG_VM_NAME_FILTER" |
+      devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh "$ARG_VM_NAME_FILTER" |
         devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'paused'
 
     )
@@ -82,7 +82,7 @@ if [[ "$OUTPUT_JSON" == true ]]; then
 
     (
 
-      devkit_ansible.proxmox_controller.vm_list.to.jsons.sh |
+      devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh |
         devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'paused'
 
     )
