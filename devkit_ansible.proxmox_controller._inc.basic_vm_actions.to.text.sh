@@ -71,7 +71,7 @@ fi
   # ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
 
   ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG" \
-    ansible-playbook -i "$R_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
+    ansible-playbook -i "$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
     "${ANSIBLE_VAULT_ARG[@]}" \
     /dev/stdin <<EOF
 
