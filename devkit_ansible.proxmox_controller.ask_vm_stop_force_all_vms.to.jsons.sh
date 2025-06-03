@@ -64,19 +64,24 @@ esac
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-if [[ "$OUTPUT_JSON" == true ]]; then
+for VM_ID in $(devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh); do
 
-  for VM_ID in $(devkit_ansible.proxmox_controller.vm_list_running_and_extract_vm_id.to.text.sh); do
+  if [[ "$OUTPUT_JSON" == true ]]; then
 
-    devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh \
-      "$ACTION" "$VM_ID" --json
+    (
+      echo "$VM_ID" | devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh \
+        "$ACTION" --json
+    )
 
-    devkit_generic.utils.text.echo_pass.to.text.to.stderr.sh "stopping :: $VM_ID "
-    sleep 1 #
+  else
 
-  done
-else
+    (
+      echo "$VM_ID" | devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh \
+        "$ACTION" --text
+    )
+  fi
 
-  devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.jsons.sh \
-    "$ACTION" "$ARG_VM_ID" --text
-fi
+  devkit_generic.utils.text.echo_pass.to.text.to.stderr.sh "stopping :: $VM_ID "
+  sleep 1 #
+
+done
