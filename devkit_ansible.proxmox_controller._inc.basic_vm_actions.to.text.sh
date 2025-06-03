@@ -28,12 +28,15 @@ fi
 
 set -euo pipefail
 ROLE_NAME="range42-ansible_roles-proxmox_controller"
+# DEFAULT_OUTPUT_JSON=true
 DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
+
 # CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
-CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible_no_skipped_json.cfg"
+# CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped.cfg"
+# CURRENT_ANSIBLE_CONFIG="./ansible.cfg"
+CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible.cfg"
 
 ARG_ACTION="${1:-}"
-# ARG_VM_ID="${2:-}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -44,6 +47,7 @@ devkit_ansible.proxmox_controller._inc.basic_vm_actions_warmup_checks.to.sh "$AR
 #
 # open vault - look for ansible-agent
 #
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 if [[ -f $DEFAULT_OPEN_VAULT_PW_FILE_PATH ]]; then
   ANSIBLE_VAULT_ARG=(--vault-password-file "$DEFAULT_OPEN_VAULT_PW_FILE_PATH")
@@ -61,21 +65,15 @@ fi
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-IFS=$'\n'
+# note <<-EOF - delete should remove tab from pass to stdin.
 
-for VM_ID in $(cat - | tr -d '[:space:]'); do
+(
+  # ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
 
-  # note <<-EOF - delete should remove tab from pass to stdin.
-
-  # devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "from stdin $VM_ID"
-
-  (
-    # ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
-
-    ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG" \
-      ansible-playbook -i "$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
-      "${ANSIBLE_VAULT_ARG[@]}" \
-      /dev/stdin <<EOF
+  ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG" \
+    ansible-playbook -i "$R_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
+    "${ANSIBLE_VAULT_ARG[@]}" \
+    /dev/stdin <<EOF
 
 - hosts: px-testing
   gather_facts: false
@@ -87,15 +85,5 @@ for VM_ID in $(cat - | tr -d '[:space:]'); do
         name: $ROLE_NAME
       vars:
         proxmox_vm_action: "$ARG_ACTION"
-        proxmox_vmid: $VM_ID
-      
 EOF
-  ) | jq -c --arg action "$ARG_ACTION" '
-         .plays[].tasks[] 
-        | .hosts[] 
-        | select(type=="object" and has($action))
-        | .[$action]
-      '
-  # jq -c '.[]'
-
-done
+)

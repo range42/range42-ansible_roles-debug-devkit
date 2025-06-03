@@ -28,12 +28,11 @@ fi
 
 set -euo pipefail
 ROLE_NAME="range42-ansible_roles-proxmox_controller"
+
 DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
-# CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
 CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible_no_skipped_json.cfg"
 
 ARG_ACTION="${1:-}"
-# ARG_VM_ID="${2:-}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -44,6 +43,7 @@ devkit_ansible.proxmox_controller._inc.basic_vm_actions_warmup_checks.to.sh "$AR
 #
 # open vault - look for ansible-agent
 #
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 if [[ -f $DEFAULT_OPEN_VAULT_PW_FILE_PATH ]]; then
   ANSIBLE_VAULT_ARG=(--vault-password-file "$DEFAULT_OPEN_VAULT_PW_FILE_PATH")
@@ -55,27 +55,27 @@ else
 
 fi
 
+# devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "CURRENT_ANSIBLE_CONFIG               : $CURRENT_ANSIBLE_CONFIG"
+# devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "OPEN_VAULT_PW_FILE_PATH              : ${ANSIBLE_VAULT_ARG[*]}"
+# devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "RANGE42_ANSIBLE_ROLES__INVENTORY_DIR : $RANGE42_ANSIBLE_ROLES__INVENTORY_DIR"
+# devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "RANGE42_ANSIBLE_ROLES__DEVKITS_DIR   : $RANGE42_ANSIBLE_ROLES__DEVKITS_DIR"
+# devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "ROLE_NAME                            : $ROLE_NAME"
+# devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "ARG_ACTION                           : $ARG_ACTION"
+
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
 # inline playbook execution
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-IFS=$'\n'
+# export PYTHONWARNINGS="ignore::cryptography.utils.CryptographyDeprecationWarning:paramiko\.*"
 
-for VM_ID in $(cat - | tr -d '[:space:]'); do
+(
 
-  # note <<-EOF - delete should remove tab from pass to stdin.
-
-  # devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "from stdin $VM_ID"
-
-  (
-    # ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
-
-    ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG" \
-      ansible-playbook -i "$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
-      "${ANSIBLE_VAULT_ARG[@]}" \
-      /dev/stdin <<EOF
+  ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG" \
+    ansible-playbook -i "$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
+    "${ANSIBLE_VAULT_ARG[@]}" \
+    /dev/stdin <<EOF
 
 - hosts: px-testing
   gather_facts: false
@@ -87,15 +87,12 @@ for VM_ID in $(cat - | tr -d '[:space:]'); do
         name: $ROLE_NAME
       vars:
         proxmox_vm_action: "$ARG_ACTION"
-        proxmox_vmid: $VM_ID
       
 EOF
-  ) | jq -c --arg action "$ARG_ACTION" '
+) | jq -c --arg action "$ARG_ACTION" '
          .plays[].tasks[] 
         | .hosts[] 
         | select(type=="object" and has($action))
         | .[$action]
       '
-  # jq -c '.[]'
-
-done
+# jq -c '.[]'
