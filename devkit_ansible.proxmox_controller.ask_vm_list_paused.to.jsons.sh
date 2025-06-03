@@ -57,9 +57,14 @@ case "${1:-}" in
 
 "") ;;
 *)
-  devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-  showExample
-  exit 1
+  if [[ -z "$ARG_VM_NAME_FILTER" ]]; then
+    ARG_VM_NAME_FILTER="$1"
+    shift
+  else
+    devkit_generic.utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+    showExample
+    exit 1
+  fi
 
   ;;
 esac
@@ -74,24 +79,21 @@ if [[ "$OUTPUT_JSON" == true ]]; then
   if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
     (
       devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh "$ARG_VM_NAME_FILTER" |
-        devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'paused'
-
+        devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'running' # investigate bug.
+      # devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'paused'
     )
 
   else
-
     (
-
       devkit_ansible.proxmox_controller.ask_vm_list.to.jsons.sh |
-        devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'paused'
-
+        devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'running' # investigate bug.
+      # devkit_generic.tr.jsons.key_field_select.to.jsons.sh 'vm_status' 'paused'
     )
   fi
 
 else
 
   (
-    devkit_ansible.proxmox_controller._inc.basic_vm_actions_no_args.to.jsons.sh \
-      "$ACTION" --text
+    devkit_ansible.proxmox_controller._inc.basic_vm_actions.to.text.sh "$ACTION"
   )
 fi

@@ -20,8 +20,7 @@ showExample() {
   echo
 }
 
-if [ "$1" = '-h' ] ||
-  [ "$1" = '--help' ]; then
+if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo NAME
   echo "  $(basename "$0") - Start vm_id vm - Execute the specified $ACTION action via Ansible "
   echo
@@ -48,7 +47,7 @@ devkit_ansible.proxmox_controller._inc.warmup_checks_stdin.sh
 
 OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
 
-case "${2:-}" in
+case "${1:-}" in
 --json)
   OUTPUT_JSON=true
   ;;
@@ -74,14 +73,14 @@ for VM_ID in $(cat - | tr -d '[:space:]'); do
 
   if [[ "$OUTPUT_JSON" == true ]]; then
     (
-      echo "$VM_ID" | devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh \
-        "$ACTION" --json
+      echo "$VM_ID" |
+        devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION"
     )
 
   else
     (
-      echo "$VM_ID" | devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.jsons.sh \
-        "$ACTION" --text
+      echo "$VM_ID" |
+        devkit_ansible.proxmox_controller._inc.vm_id.basic_vm_actions.to.text.sh "$ACTION"
     )
   fi
 
