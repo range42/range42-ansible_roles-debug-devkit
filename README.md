@@ -4,13 +4,17 @@
 
 This repository uses a strict naming convention for all scripts. Each filename follow the structure :
 
-- ** <CONNECTOR/MODULE>(.<DATA_INPUT>).<ACTION/VERB>(.to.<DATA_OUTPUT>).EXTENSION **
+
+<**CONNECTOR/MODULE**>(.<**DATA_INPUT**>).<**VERB/ACTION**>(.to.<***DATA_OUTPUT**>).EXTENSION
+
+
 
 1. **CONNECTOR/MODULE**: top-level namespace (e.g. `devkit_ansible`, `proxmox_vm`, `proxmox_netowork`).
 2. **DATA INPUT** (optional): parameter **required** via STDIN or argument (e.g. `vm_id`, `node_name`, `storage_name`).
 3. **VERB**: snake_case command describing the operation (e.g. `get_config`, `list_interfaces`).
 4. **DATA OUTPUT FORMAT** : `.to.<format>` possible output (`jsons`, `text`, `file`, `stderr`, etc.).
 5. **Extensions**: can be .sh|.js|.py - what you want (until we output to stderr error and stdout the "to" format.)
+
 
 
 ## Additionnal details on structure : 
