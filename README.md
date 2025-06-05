@@ -42,6 +42,15 @@ alias llg="ls -lah | grep -i $1 "
 
 ```
 
+and also : 
+
+```json 
+
+alias ls='LC_COLLATE=C ls --color -h --group-directories-first'
+alias ll='LC_COLLATE=C ls -lah '
+
+```
+
 ### Examples 
 
 `proxmox_vm.vm_id.get_config.to.jsons.sh`
