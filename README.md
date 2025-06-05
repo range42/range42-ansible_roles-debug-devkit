@@ -36,7 +36,7 @@ Following this convention makes scripts self-documented, easy to locate, and exp
 
 I suggest you to add this alias in your shell to ls grep in dir tree : 
 
-```json
+```
 
 alias llg="ls -lah | grep -i $1 " 
 
