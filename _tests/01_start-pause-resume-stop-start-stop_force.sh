@@ -12,22 +12,22 @@ list_running_group_with_filter() {
 
     local CURRENT_GROUP="$1"
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
 
-    CURRENT_TEST="_list running vm with filter        - devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST ::ARGS:: $CURRENT_GROUP"
+    CURRENT_TEST="_list running vm with filter        - proxmox_vm.list_running_and_extract_vm_id.to.text.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST ::ARGS:: $CURRENT_GROUP"
 
-    devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"
+    proxmox_vm.list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"
 }
 
 list_running_group() {
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
 
-    CURRENT_TEST="_list running vm without filter      - devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    CURRENT_TEST="_list running vm without filter      - proxmox_vm.list_running_and_extract_vm_id.to.text.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
 
-    devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh
+    proxmox_vm.list_running_and_extract_vm_id.to.text.sh
 }
 
 #################################################################
@@ -36,22 +36,22 @@ list_stop_group_with_filter() {
 
     local CURRENT_GROUP="$1"
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
 
-    CURRENT_TEST="_list stop vm with filter        - devkit_ansible.proxmox_controller.ask_vm_list_stopped.to.jsons.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST ::ARGS:: $CURRENT_GROUP"
+    CURRENT_TEST="_list stop vm with filter        - proxmox_vm.list_stopped.to.jsons.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST ::ARGS:: $CURRENT_GROUP"
 
-    devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"
+    proxmox_vm.list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"
 }
 
 list_stop_group() {
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
 
-    CURRENT_TEST="_list stop vm without filter      - devkit_ansible.proxmox_controller.ask_vm_list_stopped.to.jsons.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    CURRENT_TEST="_list stop vm without filter      - proxmox_vm.list_stopped.to.jsons.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
 
-    devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh
+    proxmox_vm.list_running_and_extract_vm_id.to.text.sh
 }
 
 #################################################################
@@ -60,20 +60,20 @@ start_batch_group_with_filter() {
 
     local CURRENT_GROUP="$1"
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
 
-    CURRENT_TEST="_batch start $CURRENT_GROUP       - devkit_ansible.proxmox_controller.vm_id.ask_vm_start.to.jsons.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    CURRENT_TEST="_batch start $CURRENT_GROUP       - proxmox_vm.vm_id.start.to.jsons.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
 
     for vm_id in $(
-        devkit_ansible.proxmox_controller.ask_vm_list_stopped.to.jsons.sh "$CURRENT_GROUP" |
+        proxmox_vm.list_stopped.to.jsons.sh "$CURRENT_GROUP" |
             jq -r ".vm_id"
     ); do
 
-        devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
+        devkit_utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
         (
             echo "$vm_id" |
-                devkit_ansible.proxmox_controller.vm_id.ask_vm_start.to.jsons.sh # --text
+                proxmox_vm.vm_id.start.to.jsons.sh # --text
         )
 
         sleep 3
@@ -87,18 +87,18 @@ pause_batch_group_with_filter() {
 
     local CURRENT_GROUP="$1"
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
 
-    CURRENT_TEST="_batch pause $CURRENT_GROUP       - devkit_ansible.proxmox_controller.vm_id.ask_vm_pause.to.jsons.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    CURRENT_TEST="_batch pause $CURRENT_GROUP       - proxmox_vm.vm_id.pause.to.jsons.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
 
-    for vm_id in $(devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"); do
+    for vm_id in $(proxmox_vm.list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"); do
 
-        devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
+        devkit_utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
 
         (
             echo "$vm_id" |
-                devkit_ansible.proxmox_controller.vm_id.ask_vm_pause.to.jsons.sh # --text
+                proxmox_vm.vm_id.pause.to.jsons.sh # --text
         )
 
         sleep 3
@@ -112,18 +112,18 @@ resume_batch_group_with_filter() {
 
     local CURRENT_GROUP="$1"
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
 
-    CURRENT_TEST="_batch resume $CURRENT_GROUP       - devkit_ansible.proxmox_controller.vm_id.ask_vm_resume.to.jsons.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    CURRENT_TEST="_batch resume $CURRENT_GROUP       - proxmox_vm.vm_id.resume.to.jsons.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
 
-    for vm_id in $(devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"); do
+    for vm_id in $(proxmox_vm.list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"); do
 
-        devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
+        devkit_utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
 
         (
             echo "$vm_id" |
-                devkit_ansible.proxmox_controller.vm_id.ask_vm_resume.to.jsons.sh # --text
+                proxmox_vm.vm_id.resume.to.jsons.sh # --text
         )
 
         sleep 3
@@ -137,20 +137,20 @@ stop_batch_group_with_filter() {
 
     local CURRENT_GROUP="$1"
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
 
-    CURRENT_TEST="_batch stop_force $CURRENT_GROUP       - devkit_ansible.proxmox_controller.vm_id.ask_vm_stop_force.to.jsons.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    CURRENT_TEST="_batch stop_force $CURRENT_GROUP       - proxmox_vm.vm_id.stop_force.to.jsons.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
 
-    devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"
+    proxmox_vm.list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"
 
-    for vm_id in $(devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"); do
+    for vm_id in $(proxmox_vm.list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"); do
 
-        devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
+        devkit_utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
 
         (
             echo "$vm_id" |
-                devkit_ansible.proxmox_controller.vm_id.ask_vm_stop_force.to.jsons.sh # --text
+                proxmox_vm.vm_id.stop_force.to.jsons.sh # --text
 
         )
 
@@ -163,19 +163,19 @@ stop_batch_group_with_filter() {
 
 pause_all() {
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_batch stop all vm $CURRENT_GROUP       - devkit_ansible.proxmox_controller.vm_id.ask_vm_stop_force.to.jsons.sh  "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_batch stop all vm $CURRENT_GROUP       - proxmox_vm.vm_id.stop_force.to.jsons.sh  "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
 
-    devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"
+    proxmox_vm.list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"
 
-    for vm_id in $(devkit_ansible.proxmox_controller.ask_vm_list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"); do
+    for vm_id in $(proxmox_vm.list_running_and_extract_vm_id.to.text.sh "$CURRENT_GROUP"); do
 
-        devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
+        devkit_utils.text.echo_trace.to.text.to.stderr.sh "$vm_id"
 
         (
             echo "$vm_id" |
-                devkit_ansible.proxmox_controller.vm_id.ask_vm_stop_force.to.jsons.sh # --text
+                proxmox_vm.vm_id.stop_force.to.jsons.sh # --text
 
         )
 
@@ -189,63 +189,63 @@ pause_all() {
 mass_test() {
 
     local CURRENT_GROUP="$1"
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_mass start         $CURRENT_GROUP       - devkit_ansible.proxmox_controller.ask_vm_start_all_vms.to.jsons.sh "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
-    devkit_ansible.proxmox_controller.ask_vm_start_all_vms.to.jsons.sh "$CURRENT_GROUP"
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_mass start         $CURRENT_GROUP       - proxmox_vm.start_all_vms.to.jsons.sh "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    proxmox_vm.start_all_vms.to.jsons.sh "$CURRENT_GROUP"
 
     sleep 10 # to fast for proxmo web ui...
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_mass pause         $CURRENT_GROUP       - devkit_ansible.proxmox_controller.ask_vm_pause_all_vms.to.jsons.sh "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
-    devkit_ansible.proxmox_controller.ask_vm_pause_all_vms.to.jsons.sh "$CURRENT_GROUP"
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_mass pause         $CURRENT_GROUP       - proxmox_vm.pause_all_vms.to.jsons.sh "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    proxmox_vm.pause_all_vms.to.jsons.sh "$CURRENT_GROUP"
 
     sleep 10 # to fast for proxmo web ui...
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_mass resume        $CURRENT_GROUP       - devkit_ansible.proxmox_controller.ask_vm_resume_all_vms.to.jsons.sh"
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
-    devkit_ansible.proxmox_controller.ask_vm_resume_all_vms.to.jsons.sh "$CURRENT_GROUP"
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_mass resume        $CURRENT_GROUP       - proxmox_vm.resume_all_vms.to.jsons.sh"
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    proxmox_vm.resume_all_vms.to.jsons.sh "$CURRENT_GROUP"
 
     sleep 10 # to fast for proxmo web ui...
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_mass stop          $CURRENT_GROUP       - devkit_ansible.proxmox_controller.ask_vm_stop_force_all_vms.to.jsons.sh "
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
-    devkit_ansible.proxmox_controller.ask_vm_stop_force_all_vms.to.jsons.sh "$CURRENT_GROUP"
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_mass stop          $CURRENT_GROUP       - proxmox_vm.stop_force_all_vms.to.jsons.sh "
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    proxmox_vm.stop_force_all_vms.to.jsons.sh "$CURRENT_GROUP"
 
     sleep 10 # to fast for proxmo web ui...
 
     #
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_mass start         $CURRENT_GROUP       - devkit_ansible.proxmox_controller.ask_vm_start_all_vms.to.jsons.sh"
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
-    devkit_ansible.proxmox_controller.ask_vm_start_all_vms.to.jsons.sh "$CURRENT_GROUP"
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_mass start         $CURRENT_GROUP       - proxmox_vm.start_all_vms.to.jsons.sh"
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    proxmox_vm.start_all_vms.to.jsons.sh "$CURRENT_GROUP"
 
     sleep 10 # to fast for proxmo web ui...
     #
 
     CURRENT_GROUP="no_group"
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_mass pause         $CURRENT_GROUP       - devkit_ansible.proxmox_controller.ask_vm_pause_all_vms.to.jsons.sh"
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
-    devkit_ansible.proxmox_controller.ask_vm_pause_all_vms.to.jsons.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_mass pause         $CURRENT_GROUP       - proxmox_vm.pause_all_vms.to.jsons.sh"
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    proxmox_vm.pause_all_vms.to.jsons.sh
 
     sleep 10 # to fast for proxmo web ui...
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_mass resume        $CURRENT_GROUP       - devkit_ansible.proxmox_controller.ask_vm_resume_all_vms.to.jsons.sh"
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
-    devkit_ansible.proxmox_controller.ask_vm_resume_all_vms.to.jsons.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_mass resume        $CURRENT_GROUP       - proxmox_vm.resume_all_vms.to.jsons.sh"
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    proxmox_vm.resume_all_vms.to.jsons.sh
 
     sleep 10 # to fast for proxmo web ui...
 
-    devkit_generic.utils.text.echo_separator.to.text.to.stderr.sh
-    CURRENT_TEST="_mass stop_force    $CURRENT_GROUP       - devkit_ansible.proxmox_controller.ask_vm_stop_force_all_vms.to.jsons.sh"
-    devkit_generic.utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
-    devkit_ansible.proxmox_controller.ask_vm_stop_force_all_vms.to.jsons.sh
+    devkit_utils.text.echo_separator.to.text.to.stderr.sh
+    CURRENT_TEST="_mass stop_force    $CURRENT_GROUP       - proxmox_vm.stop_force_all_vms.to.jsons.sh"
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_TEST"
+    proxmox_vm.stop_force_all_vms.to.jsons.sh
 
 }
 
