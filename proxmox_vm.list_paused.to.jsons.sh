@@ -9,29 +9,36 @@ ARG_VM_NAME_FILTER=""
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
-  echo ""
-  echo "$(basename "$0") "
-  echo "$(basename "$0") "
-  echo "$(basename "$0") --json"
-  echo "$(basename "$0") --text"
-  echo "$(basename "$0") vm_test_01 --json"
-  echo "$(basename "$0") group_01_vm_01 --json"
-  echo ""
+
+  echo "  $(basename "$0") "
+  echo "  $(basename "$0") "
+  echo "  $(basename "$0") --json"
+  echo "  $(basename "$0") --text"
+  echo "  $(basename "$0") vm_test_01 --json"
+  echo "  $(basename "$0") group_01_vm_01 --json"
+
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
 
+  echo
   echo NAME
+  echo
   echo "  $(basename "$0") - list VM status - Execute the specified $ACTION action via Ansible "
   echo
-  echo SYNOPSIS
+  echo OPTIONS
+  echo
   echo "  $(basename "$0") [-h|--help]                            - command helper "
   echo "  $(basename "$0") [--json]                               - force output as json "
   echo "  $(basename "$0") [partial_or_complete_vm_name] [--json] - force output as json with filter (grep -i) on vm_name "
   echo "  $(basename "$0") [--text]                               - force output as text"
-  echo ""
+  echo
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo
+  echo "$(showExample)"
+  echo
+  echo
+
   exit 1
 fi
 

@@ -9,14 +9,19 @@ showExample() {
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
 
+  echo
+  echo
   echo NAME
+  echo
   echo "  $(basename "$0") - echo std WARNING message - text-color :: YELLOW "
   echo
-  echo SYNOPSIS
+  echo OPTIONS
+  echo
   echo "  $(basename "$0") [-h|--help]"
   echo
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo
+  echo "$(showExample)"
   echo
   exit 1
 fi

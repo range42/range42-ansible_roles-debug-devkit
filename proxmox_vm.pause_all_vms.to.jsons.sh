@@ -11,24 +11,32 @@ ARG_VM_NAME_FILTER=""
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
-  echo
-  echo "$(basename "$0") "
-  echo
+
+  echo "  $(basename "$0") "
+  echo "  $(basename "$0") --json "
+  echo "  $(basename "$0") vm_name_team_01 --json "
+  echo "  $(basename "$0") vm_name_team_02 --json "
+  echo "  $(basename "$0") --text "
+
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
 
+  echo
   echo NAME
-
+  echo
   echo "  $(basename "$0") - Pause all vm - Execute the specified $ACTION action via Ansible (all vms) "
   echo
-  echo SYNOPSIS
+  echo OPTIONS
+  echo
   echo "  $(basename "$0") [-h|--help] "
-  echo "  $(basename "$0") [VM_ID] [--json] - force output as json "
-  echo "  $(basename "$0") [VM_ID] [--text] - force output as text"
-  echo ""
+  echo "  $(basename "$0") [--json]                  - force output as json "
+  echo "  $(basename "$0") [VM_NAME_FILTER] [--json] - force output as json with filter (grep -i) on vm_name "
+  echo "  $(basename "$0") [--text]                  - force output as text"
+  echo
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo
+  echo "$(showExample)"
   exit 1
 fi
 
@@ -65,30 +73,10 @@ case "${1:-}" in
 esac
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-#I
+#
 # inc lib script call.
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-
-# for VM_ID in $(proxmox_vm.list_running_and_extract_vm_id.to.text.sh); do
-
-#   if [[ "$OUTPUT_JSON" == true ]]; then
-
-#     (
-#       echo "$VM_ID" |
-#         proxmox__inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION"
-#     )
-
-#   else
-
-#     (
-#       echo "$VM_ID" |
-#         proxmox__inc.vm_id.basic_vm_actions.to.text.sh "$ACTION"
-#     )
-#     devkit_utils.text.echo_pass.to.text.to.stderr.sh "stopping :: $VM_ID "
-#     sleep 3 #
-#   fi
-# done
 
 IFS=$'\n'
 

@@ -1,26 +1,32 @@
 #!/bin/bash
 
 showExample() {
-  echo
-  echo "VM_ID | $(basename "$0") vm_start"
-  echo "24242 | $(basename "$0") vm_stop"
-  echo "24242 | $(basename "$0") vm_stop_force"
-  echo "34242 | $(basename "$0")"
-  echo
+
+  echo "  echo VM_ID | $(basename "$0") vm_start"
+  echo "  echo '100' | $(basename "$0") vm_stop"
+  echo "  echo '100' | $(basename "$0") vm_stop_force"
+
 }
 
 if [ "$1" = '-h' ] ||
   [ "$1" = '--help' ]; then
+  echo
+  echo
+
   echo NAME
+  echo
   echo "  $(basename "$0") - LIB / INCLUDE script providing basic generic helper func for start|stop|pause|ect proxmox"
   echo
-  echo SYNOPSIS
-  echo "  $(basename "$0") [-h|--help] [URL]"
-  echo "  echo [VM_ID] | $(basename "$0") [--json] - force output as json *default "
-  echo "  echo [VM_ID] | $(basename "$0") [--text] - force output as text"
-  echo ""
+  echo OPTIONS
+  echo
+  echo "                 $(basename "$0") [-h|--help]"
+  echo "  echo [VM_ID] | $(basename "$0") [--json]     - force output as json *default "
+  echo "  echo [VM_ID] | $(basename "$0") [--text]     - force output as text"
+  echo
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo
+  echo
+  echo "$(showExample)"
   exit 1
 fi
 
@@ -65,7 +71,7 @@ fi
 
 IFS=$'\n'
 
-for VM_ID in $(cat - | tr -d '[:space:]'); do
+for VM_ID in $(cat - ); do
 
   # devkit_utils.text.echo_error.to.text.to.stderr.sh "from stdin $VM_ID"
 
