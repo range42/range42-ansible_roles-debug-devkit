@@ -4,35 +4,41 @@
 
 set -euo pipefail
 
-ACTION="vm_get_config_ram"
-# DEFAULT_OUTPUT_JSON=true # TODO
-DEFAULT_OUTPUT_JSON=false 
+ACTION="vm_get_config_cpu"
+DEFAULT_OUTPUT_JSON=true
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
+
+  echo "  echo 100 | $(basename "$0")"
+  echo "  echo 100 | $(basename "$0") --json"
+  echo "  echo 100 | $(basename "$0") --text"
+  echo "  cat /tmp/VM_ID | $(basename "$0")"
   echo
-  echo "echo 4242 | $(basename "$0")"
-  echo "echo 4242 | $(basename "$0") --json"
-  echo "echo 4242 | $(basename "$0") --text"
-  echo "cat /tmp/VM_ID | $(basename "$0")"
-  echo
-  echo "proxmox_vm.list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
-  echo "proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
+  echo "  proxmox_vm.list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
+  echo "  proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
   echo
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
-  echo NAME
-  echo "  $(basename "$0") - get RAM VM configuration - Execute the specified $ACTION action via Ansible "
   echo
-  echo SYNOPSIS
-  echo "  $(basename "$0") [-h|--help] "
-  echo "  stdin|echo|cat| [VM_ID] | $(basename "$0")  [--json] - force output as json *default"
-  echo "  stdin|echo|cat| [VM_ID] | $(basename "$0")  [--text] - force output as text"
-  echo ""
+  echo
+  echo NAME
+  echo
+  echo "  $(basename "$0") - get VM cpu configuration - Execute the specified $ACTION action via Ansible "
+  echo
+  echo OPTIONS
+  echo
+  echo "                     $(basename "$0") [-h|--help] "
+  echo "  STDIN :: [VM_ID] | $(basename "$0")  [--json] - force output as json *default"
+  echo "  STDIN :: [VM_ID] | $(basename "$0")  [--text] - force output as text"
+  echo
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo
+  echo "$(showExample)"
+  echo
+  echo
   exit 1
 fi
 
@@ -71,7 +77,7 @@ esac
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 IFS=$'\n'
-for VM_ID in $(cat - | tr -d '[:space:]'); do
+for VM_ID in $(cat -); do
 
   if [[ "$OUTPUT_JSON" == true ]]; then
     (

@@ -2,21 +2,25 @@
 
 showExample() {
 
-  echo " "
   echo "  $(basename "$0") hello_world"
-  echo " "
+
 }
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
-
+  echo
+  echo
   echo NAME
+  echo
   echo "  $(basename "$0") - echo std PASS message - text-color :: GREEN "
   echo
-  echo SYNOPSIS
+  echo OPTIONS
+  echo
   echo "  $(basename "$0") [-h|--help]"
   echo
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo
+  echo "$(showExample)"
+  echo
   echo
   exit 1
 fi

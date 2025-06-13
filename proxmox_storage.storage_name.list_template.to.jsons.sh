@@ -3,36 +3,41 @@
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 set -euo pipefail
-ACTION="storage_list_iso"
+ACTION="storage_list_template"
 DEFAULT_OUTPUT_JSON=true
-ARG_VM_NAME_FILTER=""
+ARG_STORAGE_NAME=""
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
-  echo ""
-  echo "$(basename "$0") "
-  echo "$(basename "$0") --json"
-  echo "$(basename "$0") --text"
-  echo "$(basename "$0") test_vm_01 --json"
-  echo "$(basename "$0") group_01_vm_01 --json"
 
-  echo ""
+  echo "  $(basename "$0") "
+  echo "  $(basename "$0") --json"
+  echo "  $(basename "$0") --text"
+  echo 
+  echo "  $(basename "$0") storage_name_01 --json"
+
 }
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
 
-  echo NAME
-  echo "  $(basename "$0") - list iso in storage  - Execute the specified $ACTION action via Ansible "
   echo
-  echo SYNOPSIS
+  echo NAME
+  echo
+  echo "  $(basename "$0") - list templates in storage  - Execute the specified $ACTION action via Ansible "
+  echo
+  echo OPTIONS
+  echo
   echo "  $(basename "$0") [-h|--help] "
-  echo "  $(basename "$0") [--json]                               - force output as json "
-  echo "  $(basename "$0") [partial_or_complete_vm_name] [--json] - force output as json with filter (grep -i) on vm_name "
-  echo "  $(basename "$0") [--text]                               - force output as text (debug purpose)"
+  echo "  $(basename "$0") [--json]                                    - force output as json "
+  echo "  $(basename "$0") [partial_or_complete_storage_name] [--json] - force output as json with filter (grep -i) on vm_name "
+  echo "  $(basename "$0") [--text]                                    - force output as text (debug purpose)"
   echo
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo
+  echo "$(showExample)"
+  echo
+  echo
   exit 1
 fi
 
@@ -64,8 +69,8 @@ while [[ $# -gt 0 ]]; do
     exit 1
     ;;
   *)
-    if [[ -z "$ARG_VM_NAME_FILTER" ]]; then
-      ARG_VM_NAME_FILTER="$1"
+    if [[ -z "$ARG_STORAGE_NAME" ]]; then
+      ARG_STORAGE_NAME="$1"
       shift
     else
       devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
@@ -84,20 +89,20 @@ done
 
 if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
 
-  if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
+  if [[ -n "$ARG_STORAGE_NAME" ]]; then # check if filter provided in argument
 
     (
-      proxmox__inc.basic_vm_actions.to.jsons.sh "$ACTION" # |
-      # jq '.[]' |
+      proxmox__inc.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq '.[]' |
+        devkit_transform.jsons.key_field_greper.to.jsons.sh "storage_name" "$ARG_STORAGE_NAME"
       # devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta" |
-      # devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER"
     )
 
   else # not filter in argument
 
     (
-      proxmox__inc.basic_vm_actions.to.jsons.sh "$ACTION" # |
-      # jq '.[]' |
+      proxmox__inc.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq '.[]' # |
       # devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta"
     )
 

@@ -4,24 +4,32 @@ set -euo pipefail
 IFS=$'\n\t'
 
 showExample() {
-  echo ""
+
   echo "  $(basename "$0") KEY_FIELD value_to_grep "
   echo "  echo '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\"}' | $(basename "$0") key1 value1"
-  echo
+
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
+  echo
+  echo
   echo NAME
   echo "  $(basename "$0") - select on key field with specified value"
   echo
-  echo SYNOPSIS
-  echo "  $(basename "$0") [-h|--help] key1[,key2,...]"
+  echo OPTIONS
+  echo
+  echo "                     $(basename "$0") [-h|--help]"
+  echo "  STDIN :: [jsons] | $(basename "$0") key1 value1"
   echo
   echo DESCRIPTION
+  echo
   echo "   Accept JSON data from STDIN and grep the specified key field."
   echo
   echo EXAMPLES
+  echo
   showExample
+  echo
+  echo
   exit 1
 fi
 

@@ -4,26 +4,30 @@ set -euo pipefail
 IFS=$'\n\t'
 
 showExample() {
-  echo
   echo "  $(basename "$0") key1,key2"
   echo "  echo '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\"}' | $(basename "$0") \"key1,key2\""
   echo "  echo '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\"}' | $(basename "$0") key1"
-  echo
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
+  echo
+  echo
   echo NAME
   echo "  $(basename "$0") - Remove specified keys from JSON data"
   echo
-  echo SYNOPSIS
-  echo "  $(basename "$0") [-h|--help] key1[,key2,...]"
+  echo OPTIONS
+  echo "                     $(basename "$0") [-h|--help] key1[,key2,...]"
+  echo "  STDIN :: [jsons] | $(basename "$0") key1"
   echo
   echo DESCRIPTION
   echo "  Accept JSON data from STDIN and removes the specified keys."
   echo "  Note: multiple keys should be separated by commas with or without spaces."
   echo
   echo EXAMPLES
+  echo
   showExample
+  echo
+  echo
   exit 1
 fi
 

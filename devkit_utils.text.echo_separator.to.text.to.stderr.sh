@@ -8,15 +8,20 @@ showExample() {
 }
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
-
+  echo
+  echo
   echo NAME
+  echo
   echo "  $(basename "$0") - echo separator lien :: YELLOW "
   echo
-  echo SYNOPSIS
+  echo OPTIONS
+  echo
   echo "  $(basename "$0") [-h|--help]"
   echo
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo
+  echo "$(showExample)"
+  echo
   echo
   exit 1
 fi

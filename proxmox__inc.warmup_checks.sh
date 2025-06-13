@@ -7,12 +7,17 @@ set -euo pipefail
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
+  echo
+  echo
   echo NAME
+  echo
   echo "  $(basename "$0") - Warmup checks - do not edit. "
   echo
-  echo SYNOPSIS
+  echo OPTIONS
+  echo
   echo "  $(basename "$0") [-h|--help] "
-  echo ""
+  echo
+  echo
 
   exit 1
 fi

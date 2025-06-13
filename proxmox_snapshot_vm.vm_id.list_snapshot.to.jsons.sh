@@ -5,32 +5,44 @@
 set -euo pipefail
 ACTION="snapshot_vm_list"
 DEFAULT_OUTPUT_JSON=true
+ARG_VM_SNAPSHOT_NAME=""
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 showExample() {
+
+  echo "  echo 100 | $(basename "$0")"
+  echo "  echo 100 | $(basename "$0") --json"
+  echo "  echo 100 | $(basename "$0") --text"
+  echo "  cat /tmp/VM_ID | $(basename "$0")"
   echo
-  echo "echo 4242 | $(basename "$0")"
-  echo "echo 4242 | $(basename "$0") --json"
-  echo "echo 4242 | $(basename "$0") --text"
-  echo "cat /tmp/VM_ID | $(basename "$0")"
+  echo "  echo 100 | $(basename "$0") snapshot_name --json"
   echo
-  echo "proxmox_vm.list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
-  echo "proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
-  echo
+  echo "  proxmox_vm.list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
+  echo "  proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
+
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
+  echo
+  echo
   echo NAME
+  echo
+  echo
   echo "  $(basename "$0") - list vm snapshots - require vm_id  - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
+  echo
   echo "  $(basename "$0") [-h|--help] "
-  echo "  stdin|echo|cat| [VM_ID] | $(basename "$0")  [--json] - force output as json *default"
-  echo "  stdin|echo|cat| [VM_ID] | $(basename "$0")  [--text] - force output as text"
+  echo "  STDIN :: [VM_ID] | $(basename "$0")  [--json]                                     - force output as json *default"
+  echo "  STDIN :: [VM_ID] | $(basename "$0")  [partial_or_complete_snapshot_name] [--json] - force output as json with filter (grep -i) on vm_snapshot_name "
+  echo "  STDIN :: [VM_ID] | $(basename "$0")  [--text]                                     - force output as text"
   echo ""
+
   echo EXAMPLE
-  echo "  $(showExample)"
+  echo "$(showExample)"
+  echo
+  echo
   exit 1
 fi
 
@@ -47,20 +59,33 @@ proxmox__inc.warmup_checks_stdin.sh
 
 OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
 
-case "${1:-}" in
---json)
-  OUTPUT_JSON=true
-  ;;
---text)
-  OUTPUT_JSON=false
-  ;;
-"") ;;
-*)
-  devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-  showExample
-  exit 1
-  ;;
-esac
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  --json)
+    OUTPUT_JSON=true
+    shift
+    ;;
+  --text)
+    OUTPUT_JSON=false
+    shift
+    ;;
+  -*)
+    devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+    showExample
+    exit 1
+    ;;
+  *)
+    if [[ -z "$ARG_VM_SNAPSHOT_NAME" ]]; then
+      ARG_VM_SNAPSHOT_NAME="$1"
+      shift
+    else
+      devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+      showExample
+      exit 1
+    fi
+    ;;
+  esac
+done
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
@@ -69,18 +94,35 @@ esac
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 IFS=$'\n'
-for VM_ID in $(cat - | tr -d '[:space:]'); do
+for VM_ID in $(cat -); do
+
+  # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$VM_ID"
 
   if [[ "$OUTPUT_JSON" == true ]]; then
-    (
-      echo "$VM_ID" |
-        proxmox__inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION"
-    )
+
+    if [[ -n "$ARG_VM_SNAPSHOT_NAME" ]]; then # check if filter provided in argument
+
+      devkit_utils.text.echo_trace.to.text.to.stderr.sh "$VM_ID"
+      (
+        echo "$VM_ID" |
+          proxmox__inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION" |
+          jq -c '.[]' |
+          devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_snapshot_name" "$ARG_VM_SNAPSHOT_NAME"
+      )
+
+    else
+      (
+        echo "$VM_ID" |
+          proxmox__inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION" |
+          jq -c '.[]'
+      )
+    fi
 
   else
     (
       echo "$VM_ID" |
-        proxmox__inc.vm_id.basic_vm_actions.to.text.sh "$ACTION"
+        proxmox__inc.vm_id.basic_vm_actions.to.text.sh "$ACTION" |
+        jq -c '.[]'
     )
   fi
 
