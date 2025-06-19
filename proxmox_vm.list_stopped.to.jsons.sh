@@ -127,8 +127,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r PX_NODE; do
   else # text output mode  - debug
 
     printf '%s\n' "$PX_NODE" |
-      proxmox__inc.basic_vm_actions.to.text.sh "$ACTION"
-
+      proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
   fi
 
 done

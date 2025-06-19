@@ -120,38 +120,26 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r NODE_JSON; do
 
     if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
 
-      (
-        # proxmox__inc.basic_vm_actions.to.jsons.sh "$ACTION"
-        # proxmox__inc.node_name.basic_vm_actions.to.jsons.sh "$ACTION" |
-
-        printf '%s\n' "$NODE_JSON" |
-          proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-          jq '.[]' |
-          devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta" |
-          devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER"
-      )
+      printf '%s\n' "$NODE_JSON" |
+        proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq '.[]' |
+        devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta" |
+        devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER"
 
     else # not filter in argument
 
-      (
-        # proxmox__inc.basic_vm_actions.to.jsons.sh "$ACTION" |
-        # proxmox__inc.node_name.basic_vm_actions.to.jsons.sh "$ACTION" |
-
-        printf '%s\n' "$NODE_JSON" |
-          proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-          jq '.[]' |
-          devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta"
-      )
+      printf '%s\n' "$NODE_JSON" |
+        proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq '.[]' |
+        devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta"
 
     fi
+
   else # text output mode  - debug
 
-    (
-      printf '%s\n' "$NODE_JSON" |
-        proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
-      # proxmox__inc.node_name.basic_vm_actions.to.text.sh "$ACTION"
-      # proxmox__inc.basic_vm_actions.to.text.sh "$ACTION"
-    )
+    printf '%s\n' "$NODE_JSON" |
+      proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
 
   fi
+
 done
