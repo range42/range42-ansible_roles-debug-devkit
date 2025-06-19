@@ -3,7 +3,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-showExample() {
+show_example() {
   echo "  $(basename "$0") key1,key2"
   echo "  echo '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\"}' | $(basename "$0") \"key1,key2\""
   echo "  echo '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\"}' | $(basename "$0") key1"
@@ -25,7 +25,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo EXAMPLES
   echo
-  showExample
+  show_example
   echo
   echo
   exit 1
@@ -34,7 +34,7 @@ fi
 # check arguments
 if [ $# -ne 1 ]; then
   devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-  showExample
+  show_example
   exit 1
 fi
 

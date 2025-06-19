@@ -1,6 +1,6 @@
 #!/bin/bash
 
-showExample() {
+show_example() {
 
   echo " "
   echo "  $(basename "$0") "
@@ -20,7 +20,7 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo
   echo EXAMPLE
   echo
-  echo "$(showExample)"
+  echo "$(show_example)"
   echo
   echo
   exit 1

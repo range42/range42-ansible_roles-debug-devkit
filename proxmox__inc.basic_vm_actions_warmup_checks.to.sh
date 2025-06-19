@@ -13,10 +13,12 @@ ALLOWED_ACTIONS=(
   vm_stop
   vm_stop_force
   vm_list
+  vm_list_usage
   vm_get_config
   vm_get_config_cdrom
   vm_get_config_ram
   vm_get_config_cpu
+  vm_get_usage
   storage_list
   storage_list_iso
   storage_list_template
@@ -47,31 +49,33 @@ fi
 
 if [[ -z "$ARG_ACTION" ]]; then
   devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-  # showExample
+  # show_example
   exit 1
-fi
+else
 
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-#
-# quick an dirty - i want avoid the switch case.
+  #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+  #
+  # quick an dirty - i want avoid the switch case.
 
-valid=false
-
-for action in "${ALLOWED_ACTIONS[@]}"; do
-
-  if [[ "$ARG_ACTION" == "$action" ]]; then
-    valid=true
-    break
-  fi
-
-done
-
-if [ "$valid" = false ]; then
-
-  devkit_utils.text.echo_error.to.text.to.stderr.sh "Invalid action - '$ARG_ACTION'"
+  valid=false
 
   for action in "${ALLOWED_ACTIONS[@]}"; do
-    devkit_utils.text.echo_error.to.text.to.stderr.sh " - allowed - '$action'"
+
+    if [[ "$ARG_ACTION" == "$action" ]]; then
+      valid=true
+      break
+    fi
+
   done
-  exit 1
+
+  if [ "$valid" = false ]; then
+
+    devkit_utils.text.echo_error.to.text.to.stderr.sh "Invalid action - '$ARG_ACTION'"
+
+    for action in "${ALLOWED_ACTIONS[@]}"; do
+      devkit_utils.text.echo_error.to.text.to.stderr.sh " - allowed - '$action'"
+    done
+    exit 1
+  fi
+
 fi

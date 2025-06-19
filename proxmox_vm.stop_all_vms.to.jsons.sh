@@ -10,7 +10,7 @@ ARG_VM_NAME_FILTER=""
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-showExample() {
+show_example() {
 
   echo "  $(basename "$0") "
   echo "  $(basename "$0") --json "
@@ -30,12 +30,12 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo "  $(basename "$0") [-h|--help] "
   echo "  $(basename "$0") [--json]                  - force output as json "
-  echo "  $(basename "$0") [VM_NAME_FILTER] [--json] - force output as json with filter (grep -i) on vm_name "
+  echo "  $(basename "$0") [VM_NAME_FILTER] [--json] - Force output in JSON format with a case insensitive filter on vm_name "
   echo "  $(basename "$0") [VM_ID] [--text]          - force output as text"
   echo
   echo EXAMPLE
   echo
-  echo "$(showExample)"
+  echo "$(show_example)"
   echo
   echo
   exit 1
@@ -67,7 +67,7 @@ case "${1:-}" in
     shift
   else
     devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-    showExample
+    show_example
     exit 1
   fi
   ;;
@@ -93,20 +93,22 @@ for VM_ID in $(
 
   ####
 
+  JSON_LINE_REQ=$(printf "%s\n" "$VM_ID" | devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::proxmox_node" "STR::action")
+
   if [[ "$OUTPUT_JSON" == true ]]; then
-    (
-      echo "$VM_ID" |
-        proxmox__inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION"
-    )
+
+    printf '%s\n' "$JSON_LINE_REQ" |
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+
   else
-    (
-      echo "$VM_ID" |
-        proxmox__inc.vm_id.basic_vm_actions.to.text.sh "$ACTION"
-    )
+
+    printf '%s\n' "$JSON_LINE_REQ" |
+      proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
 
     devkit_utils.text.echo_pass.to.text.to.stderr.sh "stopping :: $VM_ID"
-    sleep 7 # ACPI shutdown take few seconds...
 
   fi
+
+  sleep 7 # ACPI shutdown take few seconds...
 
 done

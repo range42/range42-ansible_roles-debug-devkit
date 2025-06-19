@@ -10,16 +10,35 @@ DEFAULT_OUTPUT_JSON=true
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-showExample() {
+show_example() {
+  echo "  :: WITH VALUES FROM STDIN (as plain text) "
+  echo
+  echo "    echo \"100\" | $(basename "$0") "
+  echo "    echo \"101\" | $(basename "$0") --json"
+  echo "    echo \"102\" | $(basename "$0") --text"
+  echo
+  echo "    cat /tmp/vm_id.text | $(basename "$0")"
+  echo
 
-  echo "  echo 100 | $(basename "$0")"
-  echo "  echo 100 | $(basename "$0") --json"
-  echo "  echo 100 | $(basename "$0") --text"
-  echo "  cat /tmp/VM_ID | $(basename "$0")"
+  echo "  :: WITH VALUEs FROM STDIN (as JSON lines)"
   echo
-  echo "  proxmox_vm.list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
-  echo "  proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
+
+  local STDIN_JSON_DATA=(
+    '{"vm_id":100}'
+    '{"proxmox_node":"px-testing", "vm_id":100}'
+  )
+
+  for json in "${STDIN_JSON_DATA[@]}"; do
+    devkit_utils.text.echo_json_helper.to.text.sh "$json"
+  done | sed '$ s/$/ | '"$(basename "$0")"'/'
+
+  printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") vm_name_or_group --json"
+
+  echo ""
+  echo "    cat /tmp/vm_id.json | $(basename "$0")"
   echo
+  echo "    proxmox_vm.list.to.jsons.sh          | jq -r '.vm_id' | $(basename "$0")"
+  echo "    proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
@@ -37,7 +56,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo ""
   echo EXAMPLE
   echo
-  echo "$(showExample)"
+  echo "$(show_example)"
   echo
   echo
   exit 1
@@ -66,30 +85,29 @@ case "${1:-}" in
 "") ;;
 *)
   devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-  showExample
+  show_example
   exit 1
   ;;
 esac
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-#
-# inc lib script call.
-#
+
+JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::proxmox_node" "STR::action")
+
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-IFS=$'\n'
-for VM_ID in $(cat -); do
+printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r VM_ID; do
 
   if [[ "$OUTPUT_JSON" == true ]]; then
-    (
-      echo "$VM_ID" |
-        proxmox__inc.vm_id.basic_vm_actions.to.jsons.sh "$ACTION"
-    )
+
+    printf '%s\n' "$VM_ID" |
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+
   else
-    (
-      echo "$VM_ID" |
-        proxmox__inc.vm_id.basic_vm_actions.to.text.sh "$ACTION"
-    )
+
+    printf '%s\n' "$VM_ID" |
+      proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
+
   fi
 
 done

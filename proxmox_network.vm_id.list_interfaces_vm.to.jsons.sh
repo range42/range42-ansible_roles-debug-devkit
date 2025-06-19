@@ -3,9 +3,9 @@
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 set -euo pipefail
-ACTION="snapshot_vm_list"
+ACTION="network_list_interfaces_vm"
 DEFAULT_OUTPUT_JSON=true
-ARG_VM_SNAPSHOT_NAME=""
+ARG_VM_BRIDGE_NAME_FILTER=""
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -31,32 +31,28 @@ show_example() {
     devkit_utils.text.echo_json_helper.to.text.sh "$json"
   done | sed '$ s/$/ | '"$(basename "$0")"'/'
 
-  printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") vm_snapshot_name --json"
+  printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") vmbr0 --json"
 
   echo ""
-  echo "    cat /tmp/vm_list.json | $(basename "$0")"
-  echo ""
-  echo "    proxmox_vm.list.to.jsons.sh          | jq -r '.vm_id' | $(basename "$0")"
-  echo "    proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
+  echo "    cat /tmp/proxmox_nodes.json | $(basename "$0")"
 }
 
-if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+
   echo
   echo
   echo NAME
-  echo
-  echo
-  echo "  $(basename "$0") - list vm snapshots - require vm_id  - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - list VM network interfaces - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo
   echo "  $(basename "$0") [-h|--help] "
-  echo "  STDIN :: [VM_ID] | $(basename "$0")  [--json]                                     - force output as json *default"
-  echo "  STDIN :: [VM_ID] | $(basename "$0")  [partial_or_complete_snapshot_name] [--json] - Force output in JSON format with a case insensitive filter on vm_snapshot_name "
-  echo "  STDIN :: [VM_ID] | $(basename "$0")  [--text]                                     - force output as text"
-  echo ""
-
+  echo "  $(basename "$0") [--json]                                   - force output as json "
+  echo "  $(basename "$0") [partial_or_complete_bridge_name] [--json] - Force output in JSON format with a case insensitive filter on vm_network_bridge "
+  echo "  $(basename "$0") [--text]                                   - force output as text (debug purpose)"
+  echo
   echo EXAMPLE
+  echo
   echo "$(show_example)"
   echo
   echo
@@ -66,13 +62,12 @@ fi
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 proxmox__inc.warmup_checks.sh
-proxmox__inc.warmup_checks_stdin.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
-# define output type
+# browse provided arugments :
+# - look for output types or filter on vm_name
 #
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
 
@@ -92,8 +87,8 @@ while [[ $# -gt 0 ]]; do
     exit 1
     ;;
   *)
-    if [[ -z "$ARG_VM_SNAPSHOT_NAME" ]]; then
-      ARG_VM_SNAPSHOT_NAME="$1"
+    if [[ -z "$ARG_VM_BRIDGE_NAME_FILTER" ]]; then
+      ARG_VM_BRIDGE_NAME_FILTER="$1"
       shift
     else
       devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
@@ -111,35 +106,30 @@ JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "ST
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r VM_ID; do
+  if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
 
-  # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$VM_ID"
-
-  if [[ "$OUTPUT_JSON" == true ]]; then
-
-    if [[ -n "$ARG_VM_SNAPSHOT_NAME" ]]; then # check if filter provided in argument
-
-      # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$VM_ID"
+    if [[ -n "$ARG_VM_BRIDGE_NAME_FILTER" ]]; then # check if filter provided in argument
 
       printf '%s\n' "$VM_ID" |
         proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-        jq -c '.[]' |
-        devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_snapshot_name" "$ARG_VM_SNAPSHOT_NAME"
+        jq -c ".[]" |
+        devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_network_bridge" "$ARG_VM_BRIDGE_NAME_FILTER"
 
     else
 
-      (
-        printf '%s\n' "$VM_ID" |
-          proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-          jq -c '.[]'
-      )
+      # not filter in argument
+
+      printf '%s\n' "$VM_ID" |
+        proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq -c ".[]"
+
     fi
 
-  else
-    (
-      printf '%s\n' "$VM_ID" |
-        proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
+  else # text output mode  - debug
 
-    )
+    printf '%s\n' "$VM_ID" |
+      proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
+
   fi
 
 done

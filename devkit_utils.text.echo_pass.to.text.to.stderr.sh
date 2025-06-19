@@ -1,6 +1,6 @@
 #!/bin/bash
 
-showExample() {
+show_example() {
 
   echo "  $(basename "$0") hello_world"
 
@@ -19,7 +19,7 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo
   echo EXAMPLE
   echo
-  echo "$(showExample)"
+  echo "$(show_example)"
   echo
   echo
   exit 1
@@ -37,5 +37,5 @@ if [ $# -eq 1 ]; then
   STR_ARG="$1"
   green "$STR_ARG"
 else
-  showExample
+  show_example
 fi
