@@ -3,7 +3,7 @@
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 set -euo pipefail
-ACTION="vm_list"
+ACTION="vm_list_usage"
 DEFAULT_OUTPUT_JSON=true
 ARG_VM_NAME_FILTER=""
 
@@ -43,7 +43,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - list VM status - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - Get VM usage status on NODE - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo
@@ -113,12 +113,16 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r PX_NODE; do
     if [[ -n "$ARG_VM_NAME_FILTER" ]]; then # check if filter provided in argument
 
       printf '%s\n' "$PX_NODE" |
-        proxmox_vm.list.to.jsons.sh "$ARG_VM_NAME_FILTER" |
+        proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq -c ".[]" |
+        devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER" |
         devkit_transform.jsons.key_field_select.to.jsons.sh 'vm_status' 'running'
 
     else
+
       printf '%s\n' "$PX_NODE" |
-        proxmox_vm.list.to.jsons.sh |
+        proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+        jq -c ".[]" |
         devkit_transform.jsons.key_field_select.to.jsons.sh 'vm_status' 'running'
 
     fi

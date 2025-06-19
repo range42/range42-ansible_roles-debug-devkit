@@ -1,13 +1,15 @@
 #!/bin/bash
 
-showExample() {
-  echo "  echo VM_ID | $(basename "$0") vm_start"
-  echo "  echo '100' | $(basename "$0") vm_stop"
-  echo "  echo '100' | $(basename "$0") vm_stop_force"
+show_example() {
+
+  echo "  $(basename "$0") storage_list_iso"
+  echo "  $(basename "$0") storage_list_template"
+
 }
 
 if [ "$1" = '-h' ] ||
   [ "$1" = '--help' ]; then
+  echo
   echo
   echo NAME
   echo
@@ -15,13 +17,13 @@ if [ "$1" = '-h' ] ||
   echo
   echo OPTIONS
   echo
-  echo "                 $(basename "$0") [-h|--help] "
-  echo "  echo [VM_ID] | $(basename "$0") [--json]    - force output as json *default "
-  echo "  echo [VM_ID] | $(basename "$0") [--text]    - force output as text"
-  echo ""
+  echo "  $(basename "$0") [-h|--help] [URL]"
+  echo "  $(basename "$0") [ACTION]   "
+
+  echo
   echo EXAMPLE
   echo
-  echo "$(showExample)"
+  echo "$(show_example)"
   echo
   echo
   exit 1
@@ -31,12 +33,15 @@ fi
 
 set -euo pipefail
 ROLE_NAME="range42-ansible_roles-proxmox_controller"
+# DEFAULT_OUTPUT_JSON=true
 DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
+
 # CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
-CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible_no_skipped_json.cfg"
+# CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped.cfg"
+# CURRENT_ANSIBLE_CONFIG="./ansible.cfg"
+CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible.cfg"
 
 ARG_ACTION="${1:-}"
-# ARG_VM_ID="${2:-}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -47,6 +52,7 @@ proxmox__inc.basic_vm_actions_warmup_checks.to.sh "$ARG_ACTION"
 #
 # open vault - look for ansible-agent
 #
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 if [[ -f $DEFAULT_OPEN_VAULT_PW_FILE_PATH ]]; then
   ANSIBLE_VAULT_ARG=(--vault-password-file "$DEFAULT_OPEN_VAULT_PW_FILE_PATH")
@@ -64,21 +70,15 @@ fi
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-IFS=$'\n'
+# note <<-EOF - delete should remove tab from pass to stdin.
 
-for VM_ID in $(cat - ); do
+(
+  # ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
 
-  # note <<-EOF - delete should remove tab from pass to stdin.
-
-  # devkit_utils.text.echo_error.to.text.to.stderr.sh "from stdin $VM_ID"
-
-  (
-    # ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
-
-    ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG" \
-      ansible-playbook -i "$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
-      "${ANSIBLE_VAULT_ARG[@]}" \
-      /dev/stdin <<EOF
+  ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG" \
+    ansible-playbook -i "$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yaml" \
+    "${ANSIBLE_VAULT_ARG[@]}" \
+    /dev/stdin <<EOF
 
 - hosts: px-testing
   gather_facts: false
@@ -90,15 +90,5 @@ for VM_ID in $(cat - ); do
         name: $ROLE_NAME
       vars:
         proxmox_vm_action: "$ARG_ACTION"
-        proxmox_vmid: $VM_ID
-      
 EOF
-  ) | jq -c --arg action "$ARG_ACTION" '
-         .plays[].tasks[] 
-        | .hosts[] 
-        | select(type=="object" and has($action))
-        | .[$action]
-      '
-  # jq -c '.[]'
-
-done
+)

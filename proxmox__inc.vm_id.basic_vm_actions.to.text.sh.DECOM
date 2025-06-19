@@ -1,6 +1,6 @@
 #!/bin/bash
 
-showExample() {
+show_example() {
 
   echo "  echo VM_ID | $(basename "$0") vm_start"
   echo "  echo '100' | $(basename "$0") vm_stop"
@@ -26,7 +26,7 @@ if [ "$1" = '-h' ] ||
   echo EXAMPLE
   echo
   echo
-  echo "$(showExample)"
+  echo "$(show_example)"
   exit 1
 fi
 

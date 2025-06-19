@@ -9,7 +9,7 @@ ARG_VM_NAME_FILTER="${1:-}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-showExample() {
+show_example() {
 
   echo "  $(basename "$0") "
   echo "  $(basename "$0") --json"
@@ -29,12 +29,12 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo "  $(basename "$0") [-h|--help]                            - command helper "
   echo "  $(basename "$0") [--json]                               - force output as json "
-  echo "  $(basename "$0") [partial_or_complete_vm_name] [--json] - force output as json with filter (grep -i) on vm_name "
+  echo "  $(basename "$0") [partial_or_complete_vm_name] [--json] - Force output in JSON format with a case insensitive filter on vm_name "
   echo "  $(basename "$0") [--text]                               - force output as text"
   echo
   echo EXAMPLE
   echo
-  echo "$(showExample)"
+  echo "$(show_example)"
   echo
   echo
   exit 1
