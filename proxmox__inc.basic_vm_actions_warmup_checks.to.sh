@@ -33,7 +33,7 @@ ALLOWED_ACTIONS=(
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
-  echo
+  echo ""
   echo NAME
   echo
   echo "  $(basename "$0") - Warmup checks - check for vm_actions_*"
