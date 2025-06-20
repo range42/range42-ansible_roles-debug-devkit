@@ -132,6 +132,8 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "vm_id" "$line" ".vm_id"
       assign_if_not_empty "proxmox_node" "$line" ".proxmox_node"
       assign_if_not_empty "storage_name" "$line" ".storage_name"
+      assign_if_not_empty "vm_name" "$line" ".vm_name"
+      assign_if_not_empty "vm_snapshot_name" "$line" ".vm_snapshot_name"
 
       # ARG_ACTION=$(printf "%s\n" "$line" | jq -r ".action")
       PROXMOX_NODE=$(printf "%s\n" "$line" | jq -r ".proxmox_node")
@@ -148,7 +150,7 @@ if [ ! -t 0 ]; then
         cat <<EOF >/tmp/debug
             (
                 ANSIBLE_CONFIG="$ANSIBLE_CONFIG" \
-                                                                                                                                                                                                                                        ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
+                                                                                                                                                                                                                                                ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
             - hosts: $PROXMOX_NODE
               gather_facts: false
               vars_files:
