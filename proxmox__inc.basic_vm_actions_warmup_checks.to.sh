@@ -29,7 +29,7 @@ ALLOWED_ACTIONS=(
   snapshot_vm_create
   snapshot_lxc_create
   snapshot_lxc_list
-  # TEST
+
 )
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
