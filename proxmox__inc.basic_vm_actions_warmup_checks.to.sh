@@ -26,6 +26,8 @@ ALLOWED_ACTIONS=(
   network_list_interfaces_node
   network_list_node_sdn_zones
   snapshot_vm_list
+  snapshot_vm_create
+  snapshot_lxc_create
   snapshot_lxc_list
 )
 
