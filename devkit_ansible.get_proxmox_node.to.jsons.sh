@@ -8,6 +8,8 @@
 #### TO TEST  : https://github.com/range42/range42-private-installer/issues/30
 ####
 
+# PR-17
+
 set -euo pipefail
 
 DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
