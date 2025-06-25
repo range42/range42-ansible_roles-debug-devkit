@@ -1,28 +1,17 @@
 #!/bin/bash
 
+#
+# PR-54
+#
+
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 set -euo pipefail
 ACTION="snapshot_lxc_list"
 DEFAULT_OUTPUT_JSON=true
-
 ARG_LXC_SNAPSHOT_NAME=""
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-
-# show_example() {
-
-#   echo "echo 100 | $(basename "$0")"
-#   echo "echo 100 | $(basename "$0") --json"
-#   echo "echo 100 | $(basename "$0") --text"
-#   echo "cat /tmp/VM_ID | $(basename "$0")"
-#   echo
-#   echo "echo 100 | $(basename "$0") snapshot_name --json"
-#   echo
-#   echo "proxmox_vm.list.to.jsons.sh group_01 | jq -r '.vm_id' | $(basename "$0")"
-#   echo "proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
-
-# }
 
 show_example() {
   echo "  :: WITH VALUES FROM STDIN (as plain text) "
@@ -66,8 +55,8 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo "                     $(basename "$0") [-h|--help] "
   echo "  STDIN :: [VM_ID] | $(basename "$0")  [--json]                                     - force output as json *default"
-  echo "  STDIN :: [VM_ID] | $(basename "$0")  [partial_or_complete_snapshot_name] [--json] - Force output in JSON format with a case insensitive filter on lxc_snapshot_name "
   echo "  STDIN :: [VM_ID] | $(basename "$0")  [--text]                                     - force output as text"
+  echo "  STDIN :: [VM_ID] | $(basename "$0")  [partial_or_complete_snapshot_name] [--json] - Force output in JSON format with a case insensitive filter on vm_snapshot_name "
   echo
   echo EXAMPLE
   echo
@@ -120,7 +109,7 @@ done
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::proxmox_node" "STR::action")
+JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::lxc_name" "STR::proxmox_node" "STR::action")
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 

@@ -132,8 +132,46 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "vm_id" "$line" ".vm_id"
       assign_if_not_empty "proxmox_node" "$line" ".proxmox_node"
       assign_if_not_empty "storage_name" "$line" ".storage_name"
+
       assign_if_not_empty "vm_name" "$line" ".vm_name"
       assign_if_not_empty "vm_snapshot_name" "$line" ".vm_snapshot_name"
+      assign_if_not_empty "vm_snapshot_description" "$line" ".vm_snapshot_description"
+
+      assign_if_not_empty "lxc_name" "$line" ".lxc_name"
+      assign_if_not_empty "lxc_snapshot_name" "$line" ".lxc_snapshot_name"
+      assign_if_not_empty "lxc_snapshot_description" "$line" ".lxc_snapshot_description"
+
+      # assign_if_not_empty "vm_id""$line" ".vm_id"
+      # assign_if_not_empty "vm_name""$line" ".vm_name"
+      assign_if_not_empty "vm_cpu" "$line" ".vm_cpu"
+      assign_if_not_empty "vm_cores" "$line" ".vm_cores"
+      assign_if_not_empty "vm_sockets" "$line" ".vm_sockets"
+      assign_if_not_empty "vm_memory" "$line" ".vm_memory"
+      assign_if_not_empty "vm_disk_size" "$line" ".vm_disk_size"
+      assign_if_not_empty "vm_iso_file" "$line" ".vm_iso_file"
+
+      #####################
+
+      assign_if_not_empty "lxc_bridge" "$line" ".lxc_bridge"
+      assign_if_not_empty "lxc_cores" "$line" ".lxc_cores"
+      # assign_if_not_empty "lxc_cpu" "$line" ".lxc_cpu" # not valable.
+      assign_if_not_empty "lxc_disk_size" "$line" ".vm_lxc_disk_sizecpu"
+      assign_if_not_empty "lxc_dns_primary" "$line" ".lxc_dns_primary"
+      assign_if_not_empty "lxc_dns_secondary" "$line" ".lxc_dns_secondary"
+      assign_if_not_empty "lxc_gateway" "$line" ".lxc_gateway"
+      assign_if_not_empty "lxc_ip" "$line" ".lxc_ip"
+      assign_if_not_empty "lxc_memory" "$line" ".lxc_memory"
+      # assign_if_not_empty "lxc_name" "$line" ".lxc_name"
+      assign_if_not_empty "lxc_net_name" "$line" ".lxc_net_name"
+      assign_if_not_empty "lxc_password" "$line" ".lxc_password"
+      assign_if_not_empty "lxc_ssh_pubkeys" "$line" ".lxc_ssh_pubkeys"
+      assign_if_not_empty "lxc_template" "$line" ".lxc_template"
+      assign_if_not_empty "lxc_disk_size" "$line" ".lxc_disk_size"
+
+      assign_if_not_empty "proxmox_storage" "$line" ".proxmox_storage"
+
+      # devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: JSON_LINE DETECTED :: GET DATA FROM STDIN  - $line"
+      # exir 1
 
       # ARG_ACTION=$(printf "%s\n" "$line" | jq -r ".action")
       PROXMOX_NODE=$(printf "%s\n" "$line" | jq -r ".proxmox_node")
@@ -150,7 +188,7 @@ if [ ! -t 0 ]; then
         cat <<EOF >/tmp/debug
             (
                 ANSIBLE_CONFIG="$ANSIBLE_CONFIG" \
-                                                                                                                                                                                                                                                ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
+                                                                                                                                                                                                                                                                                                                                ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
             - hosts: $PROXMOX_NODE
               gather_facts: false
               vars_files:

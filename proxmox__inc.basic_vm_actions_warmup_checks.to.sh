@@ -6,6 +6,7 @@ set -euo pipefail
 
 ARG_ACTION="${1:-}"
 ALLOWED_ACTIONS=(
+  vm_create
   vm_delete
   vm_pause
   vm_resume
@@ -19,16 +20,33 @@ ALLOWED_ACTIONS=(
   vm_get_config_ram
   vm_get_config_cpu
   vm_get_usage
+  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+  lxc_list
+  lxc_delete
+  lxc_create
+  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   storage_list
   storage_list_iso
   storage_list_template
+  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   network_list_interfaces_vm
   network_list_interfaces_node
   network_list_node_sdn_zones
-  snapshot_vm_list
+  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   snapshot_vm_create
+  snapshot_vm_delete
+  snapshot_vm_list
+  snapshot_vm_revert
+  #
   snapshot_lxc_create
+  snapshot_lxc_delete
   snapshot_lxc_list
+  snapshot_lxc_revert
+  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+  firewall_vm_enable
+  firewall_vm_disable
+  firewall_node_enable
+  firewall_dc_enable
 
 )
 
