@@ -1,11 +1,15 @@
 #!/bin/bash
 
+#
+# PR-8
+#
+
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 set -euo pipefail
-ACTION="snapshot_lxc_create"
+ACTION="snapshot_vm_create"
 DEFAULT_OUTPUT_JSON=true
-ARG_VM_SNAPSHOT_NAME=""
+# ARG_VM_SNAPSHOT_NAME=""
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -24,8 +28,11 @@ show_example() {
 
   local STDIN_JSON_DATA=(
     '{"vm_id":100}'
-    '{"proxmox_node":"px-testing", "vm_id":100}'
-    '{"proxmox_node":"px-testing", "vm_id":100, "vm_snapshot_name":"MY_SNAPSHOT"}'
+    '{"proxmox_node":"px-testing", "vm_id":101}'
+    '{"proxmox_node":"px-testing", "vm_id":101, "vm_snapshot_name":"MY_VM_SNAPSHOT"}'
+    '{"proxmox_node":"px-testing", "vm_id":101, "vm_snapshot_description":"MY_DESCRIPTION" } '
+    '{"proxmox_node":"px-testing", "vm_id":101, "vm_snapshot_name":"MY_VM_SNAPSHOT", "vm_snapshot_description":"MY_DESCRIPTION" } '
+
   )
 
   for json in "${STDIN_JSON_DATA[@]}"; do
@@ -47,13 +54,12 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo NAME
   echo
   echo
-  echo "  $(basename "$0") - create LXC snapshot - require vm_id  - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - create VM snapshot - require vm_id  - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo
   echo "  $(basename "$0") [-h|--help] "
   echo "  STDIN :: [VM_ID] | $(basename "$0")  [--json]                                     - force output as json *default"
-  echo "  STDIN :: [VM_ID] | $(basename "$0")  [partial_or_complete_snapshot_name] [--json] - Force output in JSON format with a case insensitive filter on vm_snapshot_name "
   echo "  STDIN :: [VM_ID] | $(basename "$0")  [--text]                                     - force output as text"
   echo ""
 
@@ -93,55 +99,66 @@ while [[ $# -gt 0 ]]; do
     exit 1
     ;;
   *)
-    if [[ -z "$ARG_VM_SNAPSHOT_NAME" ]]; then
-      ARG_VM_SNAPSHOT_NAME="$1"
-      shift
-    else
-      devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-      show_example
-      exit 1
-    fi
+    # if [[ -z "$ARG_VM_SNAPSHOT_NAME" ]]; then
+    #   ARG_VM_SNAPSHOT_NAME="$1"
+    #   shift
+    # else
+    # devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+    # show_example
+    # exit 1
+    # fi
     ;;
   esac
 done
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::vm_snapshot_name" "STR::vm_name" "STR::proxmox_node" "STR::action")
+JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::vm_snapshot_name" "STR::vm_snapshot_description" "STR::vm_name" "STR::proxmox_node" "STR::action")
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
-  # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$VM_ID"
+  IS_VM_SNAPSHOT_NAME=$(jq -r '.vm_snapshot_name // empty' <<<"$CURRENT_JSON_LINE")
+  IS_VM_SNAPSHOT_DESCRIPTION=$(jq -r '.vm_snapshot_description // empty' <<<"$CURRENT_JSON_LINE")
 
-  JSON_LINE_REQ_TEST=$(jq -r '.vm_snapshot_name // empty' <<<"$CURRENT_JSON_LINE")
+  ####
 
-  if [[ -z "$JSON_LINE_REQ_TEST" ]]; then # missing snapshot name ?
+  C_ROW=$(printf '%s\n' "$CURRENT_JSON_LINE" |
+    proxmox_vm.list.to.jsons.sh |
+    devkit_transform.jsons.key_field_int_select.to.jsons.sh "vm_id" "$(printf '%s\n' "$CURRENT_JSON_LINE" | jq -r '.vm_id // empty')")
 
-    C_ROW=$(printf '%s\n' "$CURRENT_JSON_LINE" |
-      proxmox_vm.list.to.jsons.sh |
-      devkit_transform.jsons.key_field_int_select.to.jsons.sh "vm_id" "$(printf '%s\n' "$CURRENT_JSON_LINE" | jq -r '.vm_id // empty')")
+  VM_NAME="$(printf '%s\n' "$C_ROW" | jq -r '.vm_name // empty')"
 
-    VM_NAME="$(printf '%s\n' "$C_ROW" | jq -r '.vm_name // empty')"
+  ####
+
+  if [[ -z "$IS_VM_SNAPSHOT_NAME" ]]; then               # missing snapshot name ?
     VM_SNAPSHOT_NAME="$VM_NAME-$(date +'%y%m%d-%H%M%S')" # WARNING PROMOX ACCEPT MAX 40 CHARS
+  else
+    VM_SNAPSHOT_NAME=$(jq -r '.vm_snapshot_name // empty' <<<"$CURRENT_JSON_LINE")
+  fi
 
-    NEW_CURRENT_JSON_LINE=$(printf '%s\n' "$CURRENT_JSON_LINE" |
-      jq -c \
-        --arg jq_lxc_name_v "$VM_NAME" \
-        --arg jq_lxc_snapshot_name_v "$VM_SNAPSHOT_NAME" \
-        '
+  if [[ -z "$IS_VM_SNAPSHOT_DESCRIPTION" ]]; then               # missing snapshot description ?
+    VM_SNAPSHOT_DESCRIPTION="$VM_NAME-$(date +'%y%m%d-%H%M%S')" #
+  else
+    VM_SNAPSHOT_DESCRIPTION=$(jq -r '.vm_snapshot_description // empty' <<<"$CURRENT_JSON_LINE")
+  fi
+
+  NEW_CURRENT_JSON_LINE=$(printf '%s\n' "$CURRENT_JSON_LINE" |
+    jq -c \
+      --arg jq_vm_name_v "$VM_NAME" \
+      --arg jq_vm_snapshot_name_v "$VM_SNAPSHOT_NAME" \
+      --arg jq_vm_snapshot_description_v "$VM_SNAPSHOT_DESCRIPTION" \
+      '
           . + {
-            ("vm_name"): $jq_lxc_name_v, 
-            ("vm_snapshot_name"): $jq_lxc_snapshot_name_v
+            ("vm_name"): $jq_vm_name_v, 
+            ("vm_snapshot_name"): $jq_vm_snapshot_name_v,
+            ("vm_snapshot_description"): $jq_vm_snapshot_description_v
             }
         ')
 
-    # JSON HAS BEEN UPDATED MUST BE UPDATED
-
-    CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
-
-  fi
+  # JSON HAS BEEN UPDATED MUST BE UPDATED
+  CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
 
   devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
 

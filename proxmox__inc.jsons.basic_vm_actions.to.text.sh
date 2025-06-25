@@ -1,11 +1,14 @@
 #!/bin/bash
 
+#
+# PR-25
+#
+
 show_example() {
   echo "  echo 'px-testing' | $(basename "$0") network_list_interfaces_node"
 
 }
 
-# PR-25
 
 if [ "$1" = '-h' ] ||
   [ "$1" = '--help' ]; then
@@ -192,7 +195,7 @@ if [ ! -t 0 ]; then
         cat <<EOF >/tmp/debug
             (
                 ANSIBLE_CONFIG="$ANSIBLE_CONFIG" \
-                                                                                                                                                                                                                                                                                                                                                        ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
+                                                                                                                                                                                                                                                                                                                                                                ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
             - hosts: $PROXMOX_NODE
               gather_facts: false
               vars_files:
