@@ -19,23 +19,19 @@ show_example() {
   echo
 
   echo "  :: WITH VALUEs FROM STDIN (as JSON lines)"
-  echo "     cat ./vm_profiles/profile_01.json  | jq -c  | $(basename "$0")"
+  echo "     cat ./vm_profiles/lxc_profiles_01.json  | jq -c  | $(basename "$0")"
   echo
 
   local STDIN_JSON_DATA=(
-    '{"vm_id":"800","lxc_name":"test_aaaaa","lxc_template":"local:vztmpl/alpine-3.19-default_20240207_amd64.tar.xz","lxc_password":"dGhpczRmb3J0ZXN0Cg==","lxc_ssh_pubkeys":"","lxc_cpu":"1","lxc_cores":"1","lxc_memory":"2048","proxmox_storage":"local-lvm","lxc_disk_size":"16","lxc_net_name":"eth0","lxc_bridge":"vmbr0","lxc_ip":"192.168.42.231","lxc_gateway":"192.168.42.1","lxc_dns_primary":"1.1.1.1","lxc_dns_secondary":"4.2.2.4"}'
-
+    '{"vm_id":"801","lxc_name":"test-bbbb","lxc_template":"local:vztmpl/alpine-3.19-default_20240207_amd64.tar.xz","lxc_password":"testtest","lxc_ssh_pubkeys":"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOe+sCgtn+aMe+9S1ACsv8tJ2uupHNqsbwIgBpeaIA7s","lxc_cpu":"1","lxc_cores":"1","lxc_memory":"2048","proxmox_storage":"local-lvm","lxc_disk_size":"16","lxc_net_name":"eth0","lxc_bridge":"vmbr0","lxc_ip":"192.168.42.231/24","lxc_gateway":"192.168.42.1","lxc_dns_primary":"1.1.1.1","lxc_dns_secondary":"4.2.2.4"}'
   )
 
   for json in "${STDIN_JSON_DATA[@]}"; do
     devkit_utils.text.echo_json_helper.to.text.sh "$json"
   done | sed '$ s/$/ | '"$(basename "$0")"'/'
 
-  printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") --text"
-  printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") --json"
-
   echo ""
-  echo "    cat ./vm_profiles/sample_01.json | jq -c \".\" | $(basename "$0")"
+  echo "    cat ./vm_profiles/lxc_profiles_01.json | jq -c \".\" | $(basename "$0")"
   echo ""
 
 }
@@ -90,17 +86,10 @@ while [[ $# -gt 0 ]]; do
     show_example
     exit 1
     ;;
-  *)
-    # if [[ -z "$ARG_VM_SNAPSHOT_NAME" ]]; then
-    #   ARG_VM_SNAPSHOT_NAME="$1"
-    #   shift
-    # else
-    # devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-    # show_example
-    # exit 1
-    # fi
-    ;;
+  *) ;;
+
   esac
+
 done
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
