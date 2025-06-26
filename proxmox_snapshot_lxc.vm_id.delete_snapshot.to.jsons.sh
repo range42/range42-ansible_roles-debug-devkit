@@ -97,15 +97,6 @@ while [[ $# -gt 0 ]]; do
     exit 1
     ;;
   *) ;;
-    # if [[ -z "$ARG_VM_SNAPSHOT_NAME" ]]; then
-    #   ARG_VM_SNAPSHOT_NAME="$1"
-    #   shift
-    # else
-    #   devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-    #   show_example
-    #   exit 1
-    # fi
-    # ;;
   esac
 done
 
@@ -121,7 +112,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
   C_VM_NAME=$(printf '%s\n' "$CURRENT_JSON_LINE" | proxmox_lxc.vm_id.list_lxc_and_extract_vm_name.to.jsons.sh | jq -c -r ".lxc_name")
 
-  devkit_utils.text.echo_error.to.text.to.stderr.sh "C_VM_NAME $C_VM_NAME"
+  # devkit_utils.text.echo_error.to.text.to.stderr.sh "C_VM_NAME $C_VM_NAME"
 
   if [[ -z "$IS_LXC_SNAPSHOT_NAME" ]]; then # no associated vm_id ?
 
@@ -156,7 +147,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
   # # JSON HAS BEEN UPDATED MUST BE UPDATED
   CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
-  devkit_utils.text.echo_error.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
+  # devkit_utils.text.echo_error.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
 
   if [[ "$OUTPUT_JSON" == true ]]; then
 
@@ -165,7 +156,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
   else
 
-    devkit_utils.text.echo_error.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
+    # devkit_utils.text.echo_error.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
     printf '%s\n' "$CURRENT_JSON_LINE" |
       proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
 
