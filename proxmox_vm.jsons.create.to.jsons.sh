@@ -46,7 +46,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo NAME
   echo
   echo
-  echo "  $(basename "$0") - delete VM snapshot - require vm_id  - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - create VM snapshot - require vm_id  - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo
@@ -90,17 +90,10 @@ while [[ $# -gt 0 ]]; do
     show_example
     exit 1
     ;;
-  *)
-    # if [[ -z "$ARG_VM_SNAPSHOT_NAME" ]]; then
-    #   ARG_VM_SNAPSHOT_NAME="$1"
-    #   shift
-    # else
-    # devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-    # show_example
-    # exit 1
-    # fi
-    ;;
+  *) ;;
+
   esac
+
 done
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
