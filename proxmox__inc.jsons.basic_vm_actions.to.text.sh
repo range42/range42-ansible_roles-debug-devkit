@@ -9,7 +9,6 @@ show_example() {
 
 }
 
-
 if [ "$1" = '-h' ] ||
   [ "$1" = '--help' ]; then
   echo
@@ -161,14 +160,13 @@ if [ ! -t 0 ]; then
 
       assign_if_not_empty "lxc_bridge" "$line" ".lxc_bridge"
       assign_if_not_empty "lxc_cores" "$line" ".lxc_cores"
-      # assign_if_not_empty "lxc_cpu" "$line" ".lxc_cpu" # not valable.
       assign_if_not_empty "lxc_disk_size" "$line" ".vm_lxc_disk_sizecpu"
       assign_if_not_empty "lxc_dns_primary" "$line" ".lxc_dns_primary"
       assign_if_not_empty "lxc_dns_secondary" "$line" ".lxc_dns_secondary"
       assign_if_not_empty "lxc_gateway" "$line" ".lxc_gateway"
       assign_if_not_empty "lxc_ip" "$line" ".lxc_ip"
       assign_if_not_empty "lxc_memory" "$line" ".lxc_memory"
-      # assign_if_not_empty "lxc_name" "$line" ".lxc_name"
+
       assign_if_not_empty "lxc_net_name" "$line" ".lxc_net_name"
       assign_if_not_empty "lxc_password" "$line" ".lxc_password"
       assign_if_not_empty "lxc_ssh_pubkeys" "$line" ".lxc_ssh_pubkeys"
@@ -177,8 +175,23 @@ if [ ! -t 0 ]; then
 
       assign_if_not_empty "proxmox_storage" "$line" ".proxmox_storage"
 
-      devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: JSON_LINE DETECTED :: GET DATA FROM STDIN  - $line"
-      # exir 1
+      # lxc|vm clone
+      assign_if_not_empty "vm_new_id" "$line" ".vm_new_id"
+      assign_if_not_empty "lxc_description" "$line" ".lxc_description"
+      assign_if_not_empty "vm_description" "$line" ".vm_description"
+
+      # storage_download_iso
+      assign_if_not_empty "file_content_type" "$line" ".file_content_type"
+      assign_if_not_empty "file_name" "$line" ".file_name"
+      assign_if_not_empty "url" "$line" ".url"
+
+      # bonus  // extra
+      assign_if_not_empty "proxmox_cluster_color_mapping" "$line" ".proxmox_cluster_color_mapping"
+      assign_if_not_empty "vm_tag_name" "$line" ".vm_tag_name"
+      assign_if_not_empty "lxc_tag_name" "$line" ".lxc_tag_name"
+
+      devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: GET JSON FROM STDIN - $line"
+      # exit 1
 
       # ARG_ACTION=$(printf "%s\n" "$line" | jq -r ".action")
       PROXMOX_NODE=$(printf "%s\n" "$line" | jq -r ".proxmox_node")
@@ -195,7 +208,7 @@ if [ ! -t 0 ]; then
         cat <<EOF >/tmp/debug
             (
                 ANSIBLE_CONFIG="$ANSIBLE_CONFIG" \
-                                                                                                                                                                                                                                                                                                                                                                ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
             - hosts: $PROXMOX_NODE
               gather_facts: false
               vars_files:

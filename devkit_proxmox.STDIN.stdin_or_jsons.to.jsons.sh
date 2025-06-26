@@ -65,6 +65,7 @@ JSON_LINE_REQ=$(
                     .action = $action
             ' |
         jq -c "."
+    # devkit_proxmox.STDIN.normalize.to.jsons.sh "$@" | # "STR::proxmox_node" "STR::action" |
 )
 # OLDER VERSION - not matching correctly json object
 # #

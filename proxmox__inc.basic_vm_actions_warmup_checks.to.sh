@@ -10,6 +10,7 @@ ARG_ACTION="${1:-}"
 ALLOWED_ACTIONS=(
   vm_create
   vm_delete
+  #
   vm_pause
   vm_resume
   vm_start
@@ -17,18 +18,33 @@ ALLOWED_ACTIONS=(
   vm_stop_force
   vm_list
   vm_list_usage
+  #
+  vm_clone
+  #
   vm_get_config
   vm_get_config_cdrom
   vm_get_config_ram
   vm_get_config_cpu
   vm_get_usage
+  vm_set_tag
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-  lxc_list
-  lxc_delete
   lxc_create
+  lxc_delete
+  #
+  lxc_pause
+  lxc_resume
+  lxc_start
+  lxc_stop
+  lxc_stop_force
+  #
+  lxc_clone
+  #
+  lxc_list
+  lxc_set_tag
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   storage_list
   storage_list_iso
+  storage_download_iso
   storage_list_template
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   network_list_interfaces_vm
@@ -49,6 +65,8 @@ ALLOWED_ACTIONS=(
   firewall_vm_disable
   firewall_node_enable
   firewall_dc_enable
+  #
+  cluster_set_tag
 
 )
 
