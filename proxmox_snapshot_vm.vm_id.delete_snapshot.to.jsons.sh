@@ -101,16 +101,7 @@ while [[ $# -gt 0 ]]; do
     show_example
     exit 1
     ;;
-  *)
-    # if [[ -z "$ARG_VM_SNAPSHOT_NAME" ]]; then
-    #   ARG_VM_SNAPSHOT_NAME="$1"
-    #   shift
-    # else
-    # devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
-    # show_example
-    # exit 1
-    # fi
-    ;;
+  *) ;;
   esac
 done
 
@@ -126,7 +117,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
   C_VM_NAME=$(printf '%s\n' "$CURRENT_JSON_LINE" | proxmox_vm.vm_id.list_vm_and_extract_vm_name.to.jsons.sh | jq -c -r ".vm_name")
 
-  devkit_utils.text.echo_error.to.text.to.stderr.sh "C_VM_NAME $C_VM_NAME"
+  # devkit_utils.text.echo_error.to.text.to.stderr.sh "C_VM_NAME $C_VM_NAME"
 
   if [[ -z "$IS_VM_SNAPSHOT_NAME" ]]; then # no associated vm_id ?
 
