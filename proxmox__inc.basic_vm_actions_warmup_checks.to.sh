@@ -50,6 +50,10 @@ ALLOWED_ACTIONS=(
   network_list_interfaces_vm
   network_list_interfaces_node
   network_list_node_sdn_zones
+  network_add_interfaces_vm
+  network_delete_interfaces_vm
+  network_add_interfaces_node
+  network_delete_interfaces_node
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   snapshot_vm_create
   snapshot_vm_delete
@@ -63,6 +67,14 @@ ALLOWED_ACTIONS=(
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   firewall_vm_enable
   firewall_vm_disable
+  #
+  firewall_vm_apply_iptables_rule
+  firewall_vm_delete_iptables_rule
+  firewall_vm_list_iptables_rule
+  #
+  firewall_vm_add_iptables_alias
+  firewall_vm_delete_iptables_alias
+  firewall_vm_list_iptables_alias
   firewall_node_enable
   firewall_dc_enable
   #

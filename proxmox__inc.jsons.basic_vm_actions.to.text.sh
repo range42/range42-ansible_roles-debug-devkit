@@ -190,6 +190,63 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "vm_tag_name" "$line" ".vm_tag_name"
       assign_if_not_empty "lxc_tag_name" "$line" ".lxc_tag_name"
 
+      # fw
+
+      assign_if_not_empty "vm_fw_action" "$line" ".vm_fw_action"
+      assign_if_not_empty "vm_fw_type" "$line" ".vm_fw_type"
+      assign_if_not_empty "vm_fw_iface" "$line" ".vm_fw_iface"
+      assign_if_not_empty "vm_fw_source" "$line" ".vm_fw_source"
+      assign_if_not_empty "vm_fw_dest" "$line" ".vm_fw_dest"
+      assign_if_not_empty "vm_fw_proto" "$line" ".vm_fw_proto"
+      assign_if_not_empty "vm_fw_dport" "$line" ".vm_fw_dport"
+      assign_if_not_empty "vm_fw_sport" "$line" ".vm_fw_sport"
+      assign_if_not_empty "vm_fw_enable" "$line" ".vm_fw_enable"
+      assign_if_not_empty "vm_fw_comment" "$line" ".vm_fw_comment"
+      assign_if_not_empty "vm_fw_pos" "$line" ".vm_fw_pos"
+      assign_if_not_empty "vm_fw_log" "$line" ".vm_fw_log"
+
+      # fw - alias
+
+      assign_if_not_empty "vm_fw_alias_cidr" "$line" ".vm_fw_alias_cidr"
+      assign_if_not_empty "vm_fw_alias_name" "$line" ".vm_fw_alias_name"
+      assign_if_not_empty "vm_fw_alias_comment" "$line" ".vm_fw_alias_comment"
+
+      # net iface - vm
+      assign_if_not_empty "iface_model" "$line" ".iface_model"
+      assign_if_not_empty "iface_bridge" "$line" ".iface_bridge"
+      assign_if_not_empty "vm_vmnet_id" "$line" ".vm_vmnet_id"
+
+      # net iface - node
+      assign_if_not_empty "iface_name" "$line" ".iface_name"
+      assign_if_not_empty "iface_type" "$line" ".iface_type"
+      assign_if_not_empty "iface_autostart" "$line" ".iface_autostart"
+      assign_if_not_empty "iface_mtu" "$line" ".iface_mtu"
+      assign_if_not_empty "iface_vlan_id" "$line" ".iface_vlan_id"
+      assign_if_not_empty "iface_vlan_raw_device" "$line" ".iface_vlan_raw_device"
+      assign_if_not_empty "ip_address" "$line" ".ip_address"
+      assign_if_not_empty "ip_cidr" "$line" ".ip_cidr"
+      assign_if_not_empty "ip_gateway" "$line" ".ip_gateway"
+      assign_if_not_empty "ip_netmask" "$line" ".ip_netmask"
+      assign_if_not_empty "ip_comments" "$line" ".ip_comments"
+      assign_if_not_empty "ipv6_address" "$line" ".ipv6_address"
+      assign_if_not_empty "ipv6_cidr" "$line" ".ipv6_cidr"
+      assign_if_not_empty "ipv6_comments" "$line" ".ipv6_comments"
+      assign_if_not_empty "ipv6_gateway" "$line" ".ipv6_gateway"
+      assign_if_not_empty "ipv6_netmask" "$line" ".ipv6_netmask"
+      assign_if_not_empty "bridge_ports" "$line" ".bridge_ports"
+
+      assign_if_not_empty "bridge_vids" "$line" ".bridge_vids"
+      assign_if_not_empty "bridge_vlan_aware" "$line" ".bridge_vlan_aware"
+      assign_if_not_empty "bond_primary" "$line" ".bond_primary"
+      assign_if_not_empty "bond_mode" "$line" ".bond_mode"
+      assign_if_not_empty "bond_xmit_hash_policy" "$line" ".bond_xmit_hash_policy"
+      assign_if_not_empty "ovs_bonds" "$line" ".ovs_bonds"
+      assign_if_not_empty "ovs_bridge" "$line" ".ovs_bridge"
+      assign_if_not_empty "ovs_options" "$line" ".ovs_options"
+      assign_if_not_empty "ovs_ports" "$line" ".ovs_ports"
+      assign_if_not_empty "ovs_tag" "$line" ".ovs_tag"
+      assign_if_not_empty "iface_slaves" "$line" ".iface_slaves"
+
       devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: GET JSON FROM STDIN - $line"
       # exit 1
 
@@ -208,7 +265,7 @@ if [ ! -t 0 ]; then
         cat <<EOF >/tmp/debug
             (
                 ANSIBLE_CONFIG="$ANSIBLE_CONFIG" \
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
             - hosts: $PROXMOX_NODE
               gather_facts: false
               vars_files:
@@ -223,7 +280,7 @@ if [ ! -t 0 ]; then
             PLAYBOOK
             )
 EOF
-        devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: cat /tmp/debug to see inline playbook "
+        # devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: cat /tmp/debug to see inline playbook "
       fi
 
       ####
