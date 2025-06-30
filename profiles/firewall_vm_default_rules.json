@@ -1,0 +1,7 @@
+{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1, "vm_fw_comment":"01"}
+{"vm_id":100,"vm_fw_action":"DROP","vm_fw_type":"in","vm_fw_enable":1, "vm_fw_comment":"02"}
+{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"out","vm_fw_proto":"tcp","vm_fw_dport":"80","vm_fw_enable":1, "vm_fw_comment":"03"}
+{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"out","vm_fw_proto":"tcp","vm_fw_dport":"443","vm_fw_enable":1, "vm_fw_comment":"04"}
+{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"out","vm_fw_proto":"tcp","vm_fw_dport":"53","vm_fw_enable":1, "vm_fw_comment":"05"}
+{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"out","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1, "vm_fw_comment":"06"}
+{"vm_id":100,"vm_fw_action":"DROP","vm_fw_type":"out","vm_fw_enable":1, "vm_fw_comment":"07"}
