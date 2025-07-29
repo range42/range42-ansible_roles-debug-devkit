@@ -15,21 +15,25 @@ DEFAULT_OUTPUT_JSON=true
 show_example() {
 
   echo
-  echo "    echo \"JSON_DATA\" | $(basename "$0") --json"
-  echo
+  # echo "    echo \"JSON_DATA\" | $(basename "$0") --json"
+  # echo "    echo \"JSON_DATA\" | $(basename "$0") --t"
+  # echo
 
-  echo "  :: WITH VALUEs FROM STDIN (as JSON lines)"
-  echo "     cat ./vm_profiles/profile_01.json  | jq -c  | $(basename "$0")"
-  echo
+  # echo "  :: WITH VALUEs FROM STDIN (as JSON lines)"
+  # echo "     cat ./vm_profiles/profile_01.json  | jq -c  | $(basename "$0")"
+  # echo
 
   local STDIN_JSON_DATA=(
-    '{"proxmox_node":"px-testing", "vm_id": 1337, "vm_name": "AAAA_01", "vm_cpu": "host",  "vm_cores": 2, "vm_sockets": 1, "vm_memory": 2042, "vm_disk_size": 42,  "vm_iso": "local:iso/ubuntu-24.04.2-live-server-amd64.iso" }'
+    '{"proxmox_node":"px-testing", "vm_id":2222,"vm_name": "vm_no_hard_drive", "vm_cpu":"host","vm_cores":2,"vm_sockets":1,"vm_memory":2042 }'
+    '{"proxmox_node":"px-testing", "vm_id":1111,"vm_name": "vm_with_local_iso", "vm_cpu":"host","vm_cores":2,"vm_sockets":1,"vm_memory":2042, "vm_disk_size": 42,  "vm_iso": "local:iso/ubuntu-24.04.2-live-server-amd64.iso" }'
 
   )
 
   for json in "${STDIN_JSON_DATA[@]}"; do
     devkit_utils.text.echo_json_helper.to.text.sh "$json"
   done | sed '$ s/$/ | '"$(basename "$0")"'/'
+
+  echo ""
 
   printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") --text"
   printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") --json"
