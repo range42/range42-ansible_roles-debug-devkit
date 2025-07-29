@@ -132,7 +132,9 @@ if [ ! -t 0 ]; then
     if printf "%s\n" "$line" | jq -e 'type == "object"' >/dev/null 2>&1; then
 
       # devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: JSON_LINE DETECTED :: GET DATA FROM STDIN "
+      # devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: $line"
 
+      assign_if_not_empty "action" "$line" ".action"
       assign_if_not_empty "vm_id" "$line" ".vm_id"
       assign_if_not_empty "proxmox_node" "$line" ".proxmox_node"
       assign_if_not_empty "storage_name" "$line" ".storage_name"
@@ -180,9 +182,11 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "vm_description" "$line" ".vm_description"
 
       # storage_download_iso
-      assign_if_not_empty "file_content_type" "$line" ".file_content_type"
-      assign_if_not_empty "file_name" "$line" ".file_name"
-      assign_if_not_empty "url" "$line" ".url"
+      assign_if_not_empty "iso_file_content_type" "$line" ".iso_file_content_type"
+      assign_if_not_empty "iso_file_name" "$line" ".iso_file_name"
+      assign_if_not_empty "iso_url" "$line" ".iso_url"
+      # storage cloud init
+      assign_if_not_empty "cloudinit_image_path" "$line" ".cloudinit_image_path"
 
       # bonus // extra
       assign_if_not_empty "proxmox_cluster_color_mapping" "$line" ".proxmox_cluster_color_mapping"
@@ -246,14 +250,27 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "ovs_tag" "$line" ".ovs_tag"
       assign_if_not_empty "iface_slaves" "$line" ".iface_slaves"
 
-      # devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: JSON_LINE DETECTED :: GET DATA FROM STDIN  - $line"
-      # exir 1
+      # cloud init
+
+      assign_if_not_empty "vm_ci_user" "$line" ".vm_ci_user"
+      assign_if_not_empty "vm_ci_password" "$line" ".vm_ci_password"
+      assign_if_not_empty "vm_ci_ssh_key" "$line" ".vm_ci_ssh_key"
+      assign_if_not_empty "vm_ci_dns_ips" "$line" ".vm_ci_dns_ips"
+      assign_if_not_empty "vm_ci_dns_domain" "$line" ".vm_ci_dns_domain"
+      assign_if_not_empty "vm_ci_ip" "$line" ".vm_ci_ip"
+      assign_if_not_empty "vm_ci_netmask" "$line" ".vm_ci_netmask"
+      assign_if_not_empty "vm_ci_ip_gw" "$line" ".vm_ci_ip_gw"
+      #
+      assign_if_not_empty "cloudinit_image_full_path" "$line" ".cloudinit_image_full_path"
+      assign_if_not_empty "dest_proxmox_storage" "$line" ".dest_proxmox_storage"
 
       # ARG_ACTION=$(printf "%s\n" "$line" | jq -r ".action")
       PROXMOX_NODE=$(printf "%s\n" "$line" | jq -r ".proxmox_node")
 
-      # devkit_utils.text.echo_trace.to.text.to.stderr.sh ":: EXTRA VAR"
-      # devkit_utils.text.echo_trace.to.text.to.stderr.sh "${EXTRA_VAR}"
+      #### DEBUG purpose.
+
+      # NEW_CURRENT_JSON_LINE=$(printf '%s\n' "$line" | jq -c --arg jq_action_v "$ARG_ACTION" ' . + { ("action"): $jq_action_v } ')
+      # devkit_utils.text.echo_trace.to.text.to.stderr.sh "===> $NEW_CURRENT_JSON_LINE"
 
       ####
       #### DEBUG BLOCK
@@ -264,7 +281,7 @@ if [ ! -t 0 ]; then
         cat <<EOF >/tmp/debug
             (
                 ANSIBLE_CONFIG="$ANSIBLE_CONFIG" \
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
             - hosts: $PROXMOX_NODE
               gather_facts: false
               vars_files:

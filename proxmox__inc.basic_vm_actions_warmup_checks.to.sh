@@ -46,6 +46,7 @@ ALLOWED_ACTIONS=(
   storage_list_iso
   storage_download_iso
   storage_list_template
+
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   network_list_interfaces_vm
   network_list_interfaces_node
@@ -79,6 +80,10 @@ ALLOWED_ACTIONS=(
   firewall_dc_enable
   #
   cluster_set_tag
+  #
+  template_convert_vm_to_template
+  template_cloudinit_import_disk
+  cloudinit_set_variables
 
 )
 
