@@ -24,8 +24,11 @@ show_example() {
   echo
 
   local STDIN_JSON_DATA=(
-    '{"file_content":"iso","file_name":"test.iso","url":"https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-standard-3.22.0-x86_64.iso"}'
-    '{"proxmox_storage":"local","proxmox_node":"px-testing","file_content_type":"iso","file_name":"test.iso","url":"https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-standard-3.22.0-x86_64.iso"}'
+    '{"proxmox_storage":"local", "iso_file_content_type":"iso","iso_file_name":"alpine-standard-3.22.0-x86_64.iso",                               "iso_url":"https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-standard-3.22.0-x86_64.iso"}'
+    '{"proxmox_storage":"local", "iso_file_content_type":"iso","iso_file_name":"ubuntu-24.04-minimal-cloudimg-amd64.img","iso_url":"https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img"}'
+    '{"proxmox_storage":"local","iso_file_content_type":"iso", "iso_url":"https://cloud-images.ubuntu.com/minimal/daily/noble/current/noble-minimal-cloudimg-amd64.img", "iso_file_name": "noble-minimal-cloudimg-amd64.img"}'
+    '{"proxmox_storage":"local","iso_file_content_type":"iso", "iso_url":"https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img", "iso_file_name": "noble-server-cloudimg-amd64.img"}'
+    '{"proxmox_storage":"local","iso_file_content_type":"iso", "iso_url":"https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.raw", "iso_file_name": "debian-12-genericcloud-amd64.img"}'
   )
 
   for json in "${STDIN_JSON_DATA[@]}"; do
@@ -91,7 +94,7 @@ done
 
 JSON_LINE_REQ=$(
   devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh \
-    "STR::url" "STR::file_content_type" "STR::file_name" \
+    "STR::iso_url" "STR::iso_file_content_type" "STR::iso_file_name" \
     "STR::proxmox_storage" "STR::proxmox_node" "STR::action"
 )
 
@@ -110,7 +113,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
     printf '%s\n' "$CURRENT_JSON_LINE" |
       proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" #|
-      # jq -c '.[]'
+    # jq -c '.[]'
 
   else
     # text output mode  - debug
