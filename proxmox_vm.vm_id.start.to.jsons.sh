@@ -94,16 +94,21 @@ JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "ST
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r VM_ID; do
+printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
   if [[ "$OUTPUT_JSON" == true ]]; then
 
-    printf '%s\n' "$VM_ID" |
+    # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
+    # exit 0
+
+    printf '%s\n' "$CURRENT_JSON_LINE" |
       proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+    # |
+    # jq -c ".[]"
 
   else
 
-    printf '%s\n' "$VM_ID" |
+    printf '%s\n' "$CURRENT_JSON_LINE" |
       proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
 
   fi
