@@ -1,9 +1,9 @@
 
-# 📑 Table of Contents
-- [Project Overview](#-project-overview)
-- [Repository Content](#-repository-content)
-- [Contributing](#-contributing) <!-- optionnel -->
-- [License](#-license)<!-- optionnel -->
+# Table of Contents
+- [Project Overview](#-Project-Overview)
+- [Repository Content](#-Repository-Content)
+- [Contributing](#-Contributing) <!-- optionnel -->
+- [License](#-License)<!-- optionnel -->
 
 ---
 
@@ -12,7 +12,7 @@
 **RANGE42** is a modular cyber range platform designed for real-world readiness.
 We build, deploy, and document offensive, defensive, and hybrid cyber training environments using reproducible, infrastructure-as-code methodologies.
 
-## What we buildu
+## What we build
 
 - Proxmox-based cyber ranges with dynamic catalog 
 - Ansible roles for automated deployments (Wazuh, Kong, Docker, etc.)
@@ -116,7 +116,7 @@ To be defined.
 
 ## License
 
-To be defined.
+- GPL-3.0 license
 
 
 
