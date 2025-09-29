@@ -1,9 +1,9 @@
 
 # Table of Contents
-- [Project Overview](#-Project-Overview)
-- [Repository Content](#-Repository-Content)
-- [Contributing](#-Contributing) <!-- optionnel -->
-- [License](#-License)<!-- optionnel -->
+- [Project Overview](#Project-Overview)
+- [Repository Content](#Repository-Content)
+- [Contributing](#Contributing) 
+- [License](#License)
 
 ---
 
