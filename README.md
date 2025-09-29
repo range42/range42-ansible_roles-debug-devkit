@@ -40,11 +40,13 @@ These repositories provide a modular and extensible platform to design, manage a
 
 # Repository Content
 
-This repository uses a strict naming convention for all scripts. Each filename follow the structure :
+This repository contains helper scripts for testing, debugging, and, development workflows.
+It follows a strict naming convention to keep all scripts self-documented, explicit, about input/output and easy to locate.
+
+Each filename follow the structure :
 
 
 <**CONNECTOR/MODULE**>(.<**DATA_INPUT**>).<**VERB/ACTION**>(.to.<***DATA_OUTPUT**>).EXTENSION
-
 
 
 1. **CONNECTOR/MODULE**: top-level namespace (e.g. `devkit_ansible`, `proxmox_vm`, `proxmox_netowork`).
