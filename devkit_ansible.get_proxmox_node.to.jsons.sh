@@ -13,8 +13,8 @@
 set -euo pipefail
 
 DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
-VAULT_FILE="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/secrets/px-testing.cr42_tailscale.yaml"
-# VAULT_FILE="./secrets/px-testing.cr42_tailscale.yaml"
+VAULT_FILE="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/secrets/px-testing.cr42_tailscale.yml"
+# VAULT_FILE="./secrets/px-testing.cr42_tailscale.yml"
 
 
 
