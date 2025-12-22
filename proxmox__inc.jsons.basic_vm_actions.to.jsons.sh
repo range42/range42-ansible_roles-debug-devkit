@@ -111,10 +111,10 @@ fi
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 ANSIBLE_CONFIG="$CURRENT_ANSIBLE_CONFIG"
-INVENTORY="$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/off_cr_42.yml"
+INVENTORY="$RANGE42_ANSIBLE_ROLES__INVENTORY_DIR/inventory_default.yml"
 VAULT_ARGS=("${ANSIBLE_VAULT_ARG[@]}")
 
-PLAYBOOK_VARS_FILE="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/secrets/px-testing.cr42_tailscale.yml"
+PLAYBOOK_VARS_FILE="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/secrets/default_vault.yml"
 
 IFS=$'\n'
 
