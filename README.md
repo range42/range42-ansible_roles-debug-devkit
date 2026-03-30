@@ -8,6 +8,15 @@ Interacts with Proxmox API, Ansible vault, and VM management from the command li
 
 ## Getting Started
 
+### First-time setup
+
+Before using devkit scripts, the infrastructure must be initialized once
+(SSH keys, passwords, vault, Proxmox access, deployer-cli workspace).
+Run `python3 range42-init.py` or see the [range42](https://github.com/range42/range42)
+README for full setup instructions.
+
+### Daily usage
+
 Activate your workspace, then use tab completion to discover and run scripts:
 
 ```bash
