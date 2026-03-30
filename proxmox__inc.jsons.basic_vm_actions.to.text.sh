@@ -77,7 +77,7 @@ assign_if_not_empty() {
 
 set -euo pipefail
 ROLE_NAME="range42-ansible_roles-proxmox_controller"
-DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
+DEFAULT_OPEN_VAULT_PW_FILE_PATH="${RANGE42_VAULT_PASSWORD_FILE:-/tmp/vault/vault_pass.txt}"
 # CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
 # CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible_no_skipped_json.cfg"
 # CURRENT_ANSIBLE_CONFIG="./ansible.cfg"

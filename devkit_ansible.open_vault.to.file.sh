@@ -6,7 +6,7 @@
 # todo look for vault-agent project
 #
 
-OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
+OPEN_VAULT_PW_FILE_PATH="${RANGE42_VAULT_PASSWORD_FILE:-/tmp/vault/vault_pass.txt}"
 OPEN_VAUlT_DIR=$(dirname "$OPEN_VAULT_PW_FILE_PATH")
 #
 

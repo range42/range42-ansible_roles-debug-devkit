@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-DEFAULT_OPEN_VAULT_PW_FILE_PATH="/tmp/vault/vault_pass.txt"
+DEFAULT_OPEN_VAULT_PW_FILE_PATH="${RANGE42_VAULT_PASSWORD_FILE:-/tmp/vault/vault_pass.txt}"
 VAULT_FILE="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/secrets/default_vault.yml"
 # VAULT_FILE="./secrets/default_vault.yml"
 
