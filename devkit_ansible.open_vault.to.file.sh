@@ -7,12 +7,12 @@
 #
 
 OPEN_VAULT_PW_FILE_PATH="${RANGE42_VAULT_PASSWORD_FILE:-/tmp/vault/vault_pass.txt}"
-OPEN_VAUlT_DIR=$(dirname "$OPEN_VAULT_PW_FILE_PATH")
+OPEN_VAULT_DIR=$(dirname "$OPEN_VAULT_PW_FILE_PATH")
 #
 
 read -s -p " :: VAULT PWD : " VAULT_PWD
 
-mkdir -p "$OPEN_VAUlT_DIR"
+mkdir -p "$OPEN_VAULT_DIR"
 echo "$VAULT_PWD" >"$OPEN_VAULT_PW_FILE_PATH"
 
 chmod 600 "$OPEN_VAULT_PW_FILE_PATH"
