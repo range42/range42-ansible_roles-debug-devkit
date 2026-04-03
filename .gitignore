@@ -1,7 +1,8 @@
 
 inventory/
-# secrets and ansible vault 
+# secrets and ansible vault (directory or symlink)
 secrets/
+secrets
 # private playbooks
 private-playbooks/
 # python cache
