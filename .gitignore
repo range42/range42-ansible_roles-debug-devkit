@@ -4,6 +4,9 @@ inventory/
 secrets/
 # private playbooks
 private-playbooks/
+# python cache
+__pycache__/
+*.pyc
 # others
 *.retry
 logs/
