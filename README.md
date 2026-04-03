@@ -147,7 +147,7 @@ Each filename follows the structure:
 ├── devkit_utils.*                # Text utilities (echo_error, echo_warning, etc.)
 ├── proxmox__inc.*                # Internal shared includes (sourced by other scripts, not called directly)
 │
-├── profiles/                     # JSON profiles for VM/LXC creation (passed to create/clone scripts)
+├── examples/                     # JSON examples for VM/LXC creation and firewall rules
 ├── callback_plugins/             # Ansible callback plugins (no_skipped output)
 ├── _tests/                       # Test scripts
 ├── ansible.cfg                   # Devkit-specific ansible config

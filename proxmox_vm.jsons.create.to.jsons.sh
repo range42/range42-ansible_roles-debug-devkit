@@ -20,7 +20,7 @@ show_example() {
   # echo
 
   # echo "  :: WITH VALUEs FROM STDIN (as JSON lines)"
-  # echo "     cat ./vm_profiles/profile_01.json  | jq -c  | $(basename "$0")"
+  # echo "     cat ./examples/profile_01.json  | jq -c  | $(basename "$0")"
   # echo
 
   local STDIN_JSON_DATA=(
@@ -39,7 +39,7 @@ show_example() {
   printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") --json"
 
   echo ""
-  echo "    cat ./vm_profiles/sample_01.json | jq -c \".\" | $(basename "$0")"
+  echo "    cat ./examples/sample_01.json | jq -c \".\" | $(basename "$0")"
   echo ""
 
 }

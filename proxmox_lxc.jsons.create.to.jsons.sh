@@ -19,7 +19,7 @@ show_example() {
   echo
 
   echo "  :: WITH VALUEs FROM STDIN (as JSON lines)"
-  echo "     cat ./vm_profiles/lxc_profiles_01.json  | jq -c  | $(basename "$0")"
+  echo "     cat ./examples/lxc_profiles_01.json  | jq -c  | $(basename "$0")"
   echo
 
   local STDIN_JSON_DATA=(
@@ -31,7 +31,7 @@ show_example() {
   done | sed '$ s/$/ | '"$(basename "$0")"'/'
 
   echo ""
-  echo "    cat ./vm_profiles/lxc_profiles_01.json | jq -c \".\" | $(basename "$0")"
+  echo "    cat ./examples/lxc_profiles_01.json | jq -c \".\" | $(basename "$0")"
   echo ""
 
 }

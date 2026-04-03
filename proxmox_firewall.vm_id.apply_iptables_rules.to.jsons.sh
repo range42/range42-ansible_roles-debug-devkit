@@ -113,7 +113,7 @@ show_example() {
   done | sed '$ s/$/ | '"$(basename "$0")"'/'
 
   echo ""
-  echo '  cat ./profiles/firewall_vm_default_rules.json | jq -c "." |  '"$(basename "$0")"''
+  echo '  cat ./examples/firewall_vm_default_rules.json | jq -c "." |  '"$(basename "$0")"''
 
   echo ""
   echo "other examples : "
