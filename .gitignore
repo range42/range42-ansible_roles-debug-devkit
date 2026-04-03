@@ -7,3 +7,5 @@ private-playbooks/
 # others
 *.retry
 logs/
+CLAUDE.md
+**/CLAUDE.md
