@@ -11,7 +11,7 @@ jobs:
     container:
       image: debian:trixie-slim
     steps:
-      - run: apt-get update && apt-get install -y --no-install-recommends git shellcheck
+      - run: apt-get update && apt-get install -y --no-install-recommends ca-certificates git shellcheck
       - uses: actions/checkout@v4
       - run: find . -name '*.sh' -exec shellcheck --severity=warning {} +
 
