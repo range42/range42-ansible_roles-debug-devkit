@@ -44,6 +44,19 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
 fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+# auto-delegate to the direct API fast path when reachable
+# override with RANGE42_PROXMOX_API_FORCE=off to keep the ansible slow path
+
+if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
+  if proxmox__inc.api_reachable.sh ; then
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API reachable - delegating to proxmox_vm.vm_id.list_vm_and_extract_vm_name_with_api.to.jsons.sh"
+    exec proxmox_vm.vm_id.list_vm_and_extract_vm_name_with_api.to.jsons.sh "$@"
+  else
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API not reachable - using ansible slow path"
+  fi
+fi
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 proxmox__inc.warmup_checks.sh
 proxmox__inc.warmup_checks_stdin.sh
