@@ -52,7 +52,10 @@ NEW_KEY_FIELD_NAME_FROM_STDIN=$(extract_new_key_field_name_from_stdin "$1")
 
 JSON_LINE_REQ=$(
 
-    { [ -t 0 ] && printf "%s\n" "$VAULT_NODE" || cat -; } |
+    { [ -t 0 ] && printf "%s
+" "$VAULT_NODE" || { _STDIN=$(cat -); [ -n "$_STDIN" ] && printf "%s
+" "$_STDIN" || printf "%s
+" "$VAULT_NODE"; }; } |
         jq -R -c --arg key "$NEW_KEY_FIELD_NAME_FROM_STDIN" '
             (fromjson? // .) as $v_to_evaluate |
                 if ($v_to_evaluate | type) == "object" then
