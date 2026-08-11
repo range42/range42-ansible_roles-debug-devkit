@@ -51,6 +51,7 @@ ALLOWED_ACTIONS=(
   network_list_interfaces_vm
   network_list_interfaces_node
   network_list_node_sdn_zones
+  network_list_sdn_zones
   network_add_interfaces_vm
   network_delete_interfaces_vm
   network_add_interfaces_node
