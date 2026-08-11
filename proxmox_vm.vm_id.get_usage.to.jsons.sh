@@ -9,8 +9,6 @@
 set -euo pipefail
 
 ACTION="vm_list_usage"
-# DEFAULT_OUTPUT_JSON=true # todo
-DEFAULT_OUTPUT_JSON=true
 # ARG_VM_NAME_FILTER=""
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -75,16 +73,12 @@ proxmox__inc.warmup_checks_stdin.sh
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
-
 while [[ $# -gt 0 ]]; do
   case "$1" in
   --json)
-    OUTPUT_JSON=true
     shift
     ;;
   --text)
-    OUTPUT_JSON=false
     shift
     ;;
   -*)
