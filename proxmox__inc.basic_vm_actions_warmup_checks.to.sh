@@ -53,6 +53,20 @@ ALLOWED_ACTIONS=(
   network_list_sdn_zones
   network_list_sdn_vnets
   network_list_sdn_subnets
+  #
+  # SDN cluster-level, dans l'ordre operationnel : creer, modifier, supprimer,
+  # appliquer, puis reconcilier les regles SNAT vivantes (l'apply n'est pas idempotent).
+  # L'ordre de suppression est impose par Proxmox : subnet -> vnet -> zone.
+  network_add_sdn_zone
+  network_add_sdn_vnet
+  network_add_sdn_subnet
+  network_update_sdn_subnet
+  network_delete_sdn_subnet
+  network_delete_sdn_vnet
+  network_delete_sdn_zone
+  network_apply_sdn
+  network_delete_snat_rules
+  #
   network_add_interfaces_vm
   network_delete_interfaces_vm
   network_add_interfaces_node
@@ -78,11 +92,21 @@ ALLOWED_ACTIONS=(
   firewall_vm_add_iptables_alias
   firewall_vm_delete_iptables_alias
   firewall_vm_list_iptables_alias
+  #
+  firewall_vm_enable_default_ssh_rules
+  #
   firewall_node_enable
+  firewall_node_disable
+  firewall_node_apply_iptables_rule
+  # anti-lockout : a jouer AVANT firewall_node_enable, jamais apres
+  firewall_node_enable_management_access
+  #
   firewall_dc_enable
+  firewall_dc_disable
   #
   cluster_set_tag
   #
+  template_create
   template_convert_vm_to_template
   template_cloudinit_import_disk
   cloudinit_set_variables
