@@ -15,13 +15,7 @@ jobs:
       - uses: actions/checkout@v6
       - run: find . -name '*.sh' -exec shellcheck --severity=warning {} +
 
-  ansible-lint:
-    name: Ansible Lint
-    runs-on: ubuntu-latest
-    container:
-      image: python:3.13-slim
-    steps:
-      - run: apt-get update && apt-get install -y --no-install-recommends git
-      - uses: actions/checkout@v6
-      - run: pip install --no-cache-dir ansible-lint
-      - run: ansible-lint . --profile=production
+  # No ansible-lint job: despite the repo name there are no roles or
+  # playbooks here — only shell scripts, ansible.cfg variants and Python
+  # callback plugins. Re-add it (profile: basic + .ansible-lint config,
+  # like the sibling repos) if Ansible YAML ever lands in this tree.
