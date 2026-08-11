@@ -208,11 +208,88 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "vm_fw_pos" "$line" ".vm_fw_pos"
       assign_if_not_empty "vm_fw_log" "$line" ".vm_fw_log"
 
+      # fw - vm level - default ssh rules
+      #
+      # The action has a default for each of these four, so an undeclared key does not
+      # crash it, it silently keeps the default instead of the value the caller passed.
+
+      assign_if_not_empty "vm_fw_ssh_accept_pos" "$line" ".vm_fw_ssh_accept_pos"
+      assign_if_not_empty "vm_fw_ssh_accept_comment" "$line" ".vm_fw_ssh_accept_comment"
+      assign_if_not_empty "vm_fw_drop_all_pos" "$line" ".vm_fw_drop_all_pos"
+      assign_if_not_empty "vm_fw_drop_all_comment" "$line" ".vm_fw_drop_all_comment"
+
       # fw - alias
 
       assign_if_not_empty "vm_fw_alias_cidr" "$line" ".vm_fw_alias_cidr"
       assign_if_not_empty "vm_fw_alias_name" "$line" ".vm_fw_alias_name"
       assign_if_not_empty "vm_fw_alias_comment" "$line" ".vm_fw_alias_comment"
+
+      # fw - node level
+      #
+      # Every key an action consumes MUST be declared here, otherwise it is dropped
+      # between the JSON line and the playbook and the action fails on an undefined
+      # variable. Adding an action to the allowed list is not enough : its PARAMETERS
+      # have to be declared too.
+
+      assign_if_not_empty "node_fw_action" "$line" ".node_fw_action"
+      assign_if_not_empty "node_fw_type" "$line" ".node_fw_type"
+      assign_if_not_empty "node_fw_iface" "$line" ".node_fw_iface"
+      assign_if_not_empty "node_fw_source" "$line" ".node_fw_source"
+      assign_if_not_empty "node_fw_dest" "$line" ".node_fw_dest"
+      assign_if_not_empty "node_fw_proto" "$line" ".node_fw_proto"
+      assign_if_not_empty "node_fw_dport" "$line" ".node_fw_dport"
+      assign_if_not_empty "node_fw_sport" "$line" ".node_fw_sport"
+      assign_if_not_empty "node_fw_enable" "$line" ".node_fw_enable"
+      assign_if_not_empty "node_fw_comment" "$line" ".node_fw_comment"
+      assign_if_not_empty "node_fw_pos" "$line" ".node_fw_pos"
+      assign_if_not_empty "node_fw_log" "$line" ".node_fw_log"
+
+      # fw - node level - anti-lockout
+
+      assign_if_not_empty "node_fw_api_port" "$line" ".node_fw_api_port"
+      assign_if_not_empty "node_fw_api_pos" "$line" ".node_fw_api_pos"
+      assign_if_not_empty "node_fw_api_comment" "$line" ".node_fw_api_comment"
+      assign_if_not_empty "node_fw_ssh_port" "$line" ".node_fw_ssh_port"
+      assign_if_not_empty "node_fw_ssh_pos" "$line" ".node_fw_ssh_pos"
+      assign_if_not_empty "node_fw_ssh_comment" "$line" ".node_fw_ssh_comment"
+      assign_if_not_empty "node_fw_mgmt_source" "$line" ".node_fw_mgmt_source"
+
+      # sdn - zone
+
+      assign_if_not_empty "sdn_zone" "$line" ".sdn_zone"
+      assign_if_not_empty "sdn_zone_type" "$line" ".sdn_zone_type"
+      assign_if_not_empty "sdn_zone_nodes" "$line" ".sdn_zone_nodes"
+      assign_if_not_empty "sdn_zone_mtu" "$line" ".sdn_zone_mtu"
+      assign_if_not_empty "sdn_zone_dhcp" "$line" ".sdn_zone_dhcp"
+
+      # sdn - vnet
+
+      assign_if_not_empty "sdn_vnet" "$line" ".sdn_vnet"
+      assign_if_not_empty "sdn_vnet_alias" "$line" ".sdn_vnet_alias"
+      assign_if_not_empty "sdn_vnet_tag" "$line" ".sdn_vnet_tag"
+      assign_if_not_empty "sdn_vnet_vlanaware" "$line" ".sdn_vnet_vlanaware"
+      assign_if_not_empty "sdn_vnet_isolate_ports" "$line" ".sdn_vnet_isolate_ports"
+
+      # sdn - subnet
+      #
+      # sdn_subnet is the CIDR, used on creation. sdn_subnet_id is the id Proxmox derives
+      # from it, <zone>-<network>-<mask>, and is what an update or a delete addresses.
+      # Two distinct keys on purpose : passing one where the other is expected fails.
+
+      assign_if_not_empty "sdn_subnet" "$line" ".sdn_subnet"
+      assign_if_not_empty "sdn_subnet_id" "$line" ".sdn_subnet_id"
+      assign_if_not_empty "sdn_subnet_cidr" "$line" ".sdn_subnet_cidr"
+      assign_if_not_empty "sdn_subnet_type" "$line" ".sdn_subnet_type"
+      assign_if_not_empty "sdn_subnet_gateway" "$line" ".sdn_subnet_gateway"
+      assign_if_not_empty "sdn_subnet_snat" "$line" ".sdn_subnet_snat"
+      assign_if_not_empty "sdn_subnet_dhcp_range" "$line" ".sdn_subnet_dhcp_range"
+      assign_if_not_empty "sdn_subnet_dhcp_dns_server" "$line" ".sdn_subnet_dhcp_dns_server"
+
+      # sdn - apply polling and snat reconciliation
+
+      assign_if_not_empty "sdn_apply_poll_retries" "$line" ".sdn_apply_poll_retries"
+      assign_if_not_empty "sdn_apply_poll_delay" "$line" ".sdn_apply_poll_delay"
+      assign_if_not_empty "sdn_snat_want" "$line" ".sdn_snat_want"
 
       # net iface - vm
       assign_if_not_empty "iface_model" "$line" ".iface_model"
