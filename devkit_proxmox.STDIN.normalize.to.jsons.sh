@@ -5,7 +5,6 @@
 parse_stdin_schema() {
     local SCHEMA=("$@")
     local STDIN_DATA KEY_NAME KEY_TYPE
-    local SIMPLE_VALUE SIMPLE_TYPE
     local KV_PAIR=()
 
     if [ -t 0 ]; then
@@ -14,15 +13,6 @@ parse_stdin_schema() {
     fi
 
     STDIN_DATA=$(cat -)
-
-    if [[ "$STDIN_DATA" =~ ^[0-9]+$ ]]; then
-        SIMPLE_TYPE="INT"
-        SIMPLE_VALUE="$STDIN_DATA"
-
-    elif [[ "$STDIN_DATA" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-        SIMPLE_TYPE="STR"
-        SIMPLE_VALUE="$STDIN_DATA"
-    fi
 
     #
     # PURE TEXT CASE
