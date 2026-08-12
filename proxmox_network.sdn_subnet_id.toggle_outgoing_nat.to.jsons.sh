@@ -8,7 +8,7 @@
 # so that enable, disable and toggle cannot drift apart. Turning NAT on or off is three
 # calls, not one, and the third is the one that gets forgotten :
 #
-#     update_sdn_subnet  ->  apply_sdn  ->  delete_snat_rules
+#     update_sdn_subnet  ->  apply_sdn  ->  delete_extra_snat_rules
 #
 # Only the subnet ID is needed. The vnet and the CIDR the other steps require are read
 # from list_sdn_subnets, which also proves the subnet exists before anything is written.

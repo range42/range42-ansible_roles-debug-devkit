@@ -12,7 +12,7 @@
 #
 # >>> AND IT IS NOT IDEMPOTENT <<<
 # Every apply adds one SNAT rule per subnet that has snat=1. Always follow it with the
-# delete_snat_rules devkit, otherwise the rule count grows on every call.
+# delete_extra_snat_rules devkit, otherwise the rule count grows on every call.
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 

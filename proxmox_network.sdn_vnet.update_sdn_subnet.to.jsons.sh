@@ -14,7 +14,7 @@
 # >>> THE TOGGLE IS THREE STEPS <<<
 #   1. this devkit          the declaration changes
 #   2. apply_sdn            the change becomes live
-#   3. delete_snat_rules    the live SNAT rules are reconciled
+#   3. delete_extra_snat_rules   the live SNAT rules are reconciled
 # Step 3 is not optional in either direction : snat=0 orphans the live rule, so without it
 # a subnet set to 0 keeps its internet access.
 #
