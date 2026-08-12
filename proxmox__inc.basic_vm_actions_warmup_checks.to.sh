@@ -65,7 +65,7 @@ ALLOWED_ACTIONS=(
   network_delete_sdn_vnet
   network_delete_sdn_zone
   network_apply_sdn
-  network_delete_snat_rules
+  network_delete_extra_snat_rules
   #
   network_add_interfaces_vm
   network_delete_interfaces_vm

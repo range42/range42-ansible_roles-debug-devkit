@@ -9,7 +9,7 @@
 #
 #     1. update_sdn_subnet     snat=1|0        the declaration changes
 #     2. apply_sdn                             the change becomes live, asynchronously
-#     3. delete_snat_rules     want=1|0        the live iptables rules are reconciled
+#     3. delete_extra_snat_rules   want=1|0     the live iptables rules are reconciled
 #
 # Step 3 is not optional in EITHER direction. Going up, an apply adds one SNAT rule per
 # active subnet every time it runs, so the count has to be brought back to one. Going down
@@ -95,7 +95,7 @@ printf '{"proxmox_node":"%s"}\n' "$SDN_NODE" \
 #
 printf '{"proxmox_node":"%s","sdn_subnet_cidr":"%s","sdn_snat_want":%s}\n' \
   "$SDN_NODE" "$SDN_CIDR" "$SDN_WANT" \
-  | proxmox_network.sdn_subnet_cidr.delete_snat_rules.to.jsons.sh --json
+  | proxmox_network.sdn_subnet_cidr.delete_extra_snat_rules.to.jsons.sh --json
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #

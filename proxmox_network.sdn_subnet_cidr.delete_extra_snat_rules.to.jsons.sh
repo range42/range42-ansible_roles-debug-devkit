@@ -2,7 +2,7 @@
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
-# delete the surplus live SNAT rules of one subnet
+# delete the extra live SNAT rules of one subnet, down to a wanted count
 #
 # Reconciles the LIVE iptables rules with the declared state. It is the one action of the
 # role that is not an API call : it runs iptables on the node, because an SDN apply is not
@@ -22,7 +22,7 @@
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 set -euo pipefail
-ACTION="network_delete_snat_rules"
+ACTION="network_delete_extra_snat_rules"
 DEFAULT_OUTPUT_JSON=true
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -52,7 +52,7 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - delete the surplus live SNAT rules of one subnet - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - delete the extra live SNAT rules of one subnet, down to a wanted count - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo
