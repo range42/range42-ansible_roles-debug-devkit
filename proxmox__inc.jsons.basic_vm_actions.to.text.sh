@@ -295,6 +295,14 @@ if [ ! -t 0 ]; then
       # net iface - vm
       assign_if_not_empty "iface_model" "$line" ".iface_model"
       assign_if_not_empty "iface_bridge" "$line" ".iface_bridge"
+
+      ## Consommees par add_network_vm, qui les garde derriere un "is defined". Sans
+      ## declaration ici la cle est lue puis jetee, l'action retombe sur le defaut de
+      ## Proxmox, et l'appelant n'a aucune erreur : le parametre est simplement
+      ## inatteignable. Six autres du meme groupe restent a ouvrir (macaddr, tag,
+      ## queues, rate, trunks, model_mac).
+      assign_if_not_empty "iface_firewall" "$line" ".iface_firewall"
+      assign_if_not_empty "iface_link_down" "$line" ".iface_link_down"
       assign_if_not_empty "vm_vmnet_id" "$line" ".vm_vmnet_id"
 
       # net iface - node
