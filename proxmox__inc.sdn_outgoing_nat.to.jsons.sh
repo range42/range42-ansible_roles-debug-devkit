@@ -40,7 +40,14 @@ case "$SDN_WANT" in 0|1|toggle) ;; *) _err "second argument must be 1, 0 or togg
 # 1. Read the subnet. This is what turns one input into the three values the chain needs,
 #    and it fails BEFORE any write if the id does not exist.
 #
-SUBNET_LINE=$(proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null \
+## Alimente avec un objet VIDE, et c'est deliberé. Le normaliseur lit stdin des qu'il
+## n'est pas un tty, donc un appel nu ne marche qu'en interactif et rend le vide des que
+## l'appelant a un pipe sur stdin. Et {} plutot que {"proxmox_node":""} : le normaliseur
+## complete avec .proxmox_node //= $vault_node, or en jq une chaine vide est truthy, donc
+## un champ vide ne serait PAS complete. On ne connait pas le noeud ici, il est justement
+## lu de la ligne ci-dessous.
+SUBNET_LINE=$(printf '{}\n' \
+  | proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null \
   | jq -c --arg id "$SDN_SUBNET_ID" 'select(.subnet == $id)' || true)
 
 if [ -z "$SUBNET_LINE" ]; then

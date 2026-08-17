@@ -91,13 +91,21 @@ count_snat() {
 net_line() { printf '{"proxmox_node":"%s","sdn_zone":"%s","sdn_vnet":"%s","sdn_subnet":"%s"}\n' \
              "$NODE" "$ZONE" "$VNET" "$CIDR" ; }
 
-zone_in_list()   { proxmox_network.datacenter.list_sdn_zones.to.jsons.sh --json 2>/dev/null \
+## Alimentees explicitement, et pas seulement parce que ce script est lance depuis un
+## terminal. Le normaliseur de chaque devkit fait : si stdin est un tty, prendre le noeud
+## du vault, SINON lire stdin. Depuis un terminal cela marche par accident ; lance avec
+## son stdin redirige, depuis cron ou dans un pipe, il lirait le vide et ces fonctions
+## renverraient toutes une chaine vide, faisant echouer chaque assertion pour une raison
+## qui n'a rien a voir avec ce qu'elles testent.
+node_line() { printf '{"proxmox_node":"%s"}\n' "$NODE" ; }
+
+zone_in_list()   { node_line | proxmox_network.datacenter.list_sdn_zones.to.jsons.sh --json 2>/dev/null \
                    | jq -r --arg z "$ZONE" 'select(.zone==$z) | .zone' | head -1 ; }
-vnet_in_list()   { proxmox_network.datacenter.list_sdn_vnets.to.jsons.sh --json 2>/dev/null \
+vnet_in_list()   { node_line | proxmox_network.datacenter.list_sdn_vnets.to.jsons.sh --json 2>/dev/null \
                    | jq -r --arg v "$VNET" 'select(.vnet==$v) | .vnet' | head -1 ; }
-subnet_in_list() { proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null \
+subnet_in_list() { node_line | proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null \
                    | jq -r --arg s "$SUBNET_ID" 'select(.subnet==$s) | .subnet' | head -1 ; }
-subnet_snat()    { proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null \
+subnet_snat()    { node_line | proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null \
                    | jq -r --arg s "$SUBNET_ID" 'select(.subnet==$s) | .subnet_snat' | head -1 ; }
 
 cleanup() {

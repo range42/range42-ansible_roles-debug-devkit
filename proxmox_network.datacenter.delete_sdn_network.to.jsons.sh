@@ -81,9 +81,6 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
   VNET=$(printf '%s' "$CURRENT_JSON_LINE" | jq -r '.sdn_vnet // empty')
   CIDR=$(printf '%s' "$CURRENT_JSON_LINE" | jq -r '.sdn_subnet // empty')
 
-  ## < /dev/null : on est dans un "printf | while read", et l include ne lit pas
-  ## stdin. Sans la redirection, ses propres sous-commandes heriteraient du pipe
-  ## de la boucle et le videraient.
-  proxmox__inc.sdn_network.to.jsons.sh delete "$NODE" "$ZONE" "$VNET" "$CIDR" < /dev/null
+  proxmox__inc.sdn_network.to.jsons.sh delete "$NODE" "$ZONE" "$VNET" "$CIDR"
 
 done

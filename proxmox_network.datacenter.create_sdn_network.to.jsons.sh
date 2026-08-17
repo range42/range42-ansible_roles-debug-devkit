@@ -82,9 +82,6 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
   ## // empty would drop a legitimate 0, so the default is applied on null only.
   SNAT=$(printf '%s' "$CURRENT_JSON_LINE" | jq -r 'if .sdn_subnet_snat == null then 1 else .sdn_subnet_snat end')
 
-  ## < /dev/null : on est dans un "printf | while read", et l include ne lit pas
-  ## stdin. Sans la redirection, ses propres sous-commandes heriteraient du pipe
-  ## de la boucle et le videraient.
-  proxmox__inc.sdn_network.to.jsons.sh create "$NODE" "$ZONE" "$VNET" "$CIDR" "$GW" "$SNAT" < /dev/null
+  proxmox__inc.sdn_network.to.jsons.sh create "$NODE" "$ZONE" "$VNET" "$CIDR" "$GW" "$SNAT"
 
 done

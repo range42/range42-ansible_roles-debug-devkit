@@ -70,24 +70,42 @@ _step() {
 #
 # Existence probes. Read only, and the reason delete is idempotent.
 #
-## Le < /dev/null n'est pas decoratif. Ces sondes ne recoivent rien sur stdin, donc
-## sans redirection elles heritent de celui de l'appelant. Quand l'appelant est un
-## "printf | while read", ce stdin est le pipe de la boucle, deja vide : le devkit voit
-## un stdin non-tty, prend la branche stdin, ne trouve rien, ne sort rien, et la sonde
-## conclut "absent". Les trois sondes repondaient donc toujours faux, ce qui faisait
-## sauter les suppressions sur des objets bien presents.
-_zone_exists() {
-  proxmox_network.datacenter.list_sdn_zones.to.jsons.sh --json 2>/dev/null < /dev/null \
-    | jq -e --arg z "$SDN_ZONE" 'select(.zone == $z)' >/dev/null 2>&1
+## LES SONDES, ET LES DEUX PIEGES QU'ELLES EVITENT
+##
+## 1. ALIMENTER, jamais couper. Le normaliseur en amont de chaque devkit fait :
+##
+##        { [ -t 0 ] && printf "%s\n" "$VAULT_NODE" || cat -; } | ...
+##
+##    donc un stdin qui n'est PAS un tty le fait LIRE stdin. Depuis un terminal il
+##    retombe sur le noeud du vault et tout marche ; depuis un script stdin n'est jamais
+##    un tty, donc il lit, et un < /dev/null lui sert un flux vide. La sonde conclut
+##    alors "absent" sur un objet bien present. C'est le bug de fcd9599.
+##
+## 2. NE PAS CONFONDRE "absent" ET "je n'ai pas pu regarder". Avec pipefail, un devkit
+##    en echec rend un pipeline non nul, exactement comme un jq -e sans correspondance.
+##    Tester seulement zero/non-zero ferait donc d'une panne d'API un "skipped"
+##    silencieux : on croirait avoir constate l'absence. Le statut du devkit est donc
+##    releve A PART, et une panne arrete la sequence au lieu de la faire mentir.
+_list_json() {
+  printf '{"proxmox_node":"%s"}\n' "$SDN_NODE" | "$1" --json 2>/dev/null
 }
-_vnet_exists() {
-  proxmox_network.datacenter.list_sdn_vnets.to.jsons.sh --json 2>/dev/null < /dev/null \
-    | jq -e --arg v "$SDN_VNET" 'select(.vnet == $v)' >/dev/null 2>&1
+
+_lookup() {
+  local devkit="$1" field="$2" value="$3" out rc
+  ## Le || rc=$? n'est pas cosmetique : sous set -e, une affectation par substitution
+  ## qui echoue interrompt le script, et le rc=$? de la ligne suivante ne serait
+  ## jamais atteint.
+  out=$(_list_json "$devkit") && rc=0 || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    _err "lookup via $devkit en echec (rc=$rc) : refus de traiter cela comme une absence"
+    exit 1
+  fi
+  printf '%s\n' "$out" | jq -e --arg v "$value" "select(.${field} == \$v)" >/dev/null 2>&1
 }
-_subnet_exists() {
-  proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null < /dev/null \
-    | jq -e --arg s "$SDN_SUBNET_ID" 'select(.subnet == $s)' >/dev/null 2>&1
-}
+
+_zone_exists()   { _lookup proxmox_network.datacenter.list_sdn_zones.to.jsons.sh   zone   "$SDN_ZONE" ; }
+_vnet_exists()   { _lookup proxmox_network.datacenter.list_sdn_vnets.to.jsons.sh   vnet   "$SDN_VNET" ; }
+_subnet_exists() { _lookup proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh subnet "$SDN_SUBNET_ID" ; }
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
