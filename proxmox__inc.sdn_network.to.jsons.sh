@@ -70,16 +70,22 @@ _step() {
 #
 # Existence probes. Read only, and the reason delete is idempotent.
 #
+## Le < /dev/null n'est pas decoratif. Ces sondes ne recoivent rien sur stdin, donc
+## sans redirection elles heritent de celui de l'appelant. Quand l'appelant est un
+## "printf | while read", ce stdin est le pipe de la boucle, deja vide : le devkit voit
+## un stdin non-tty, prend la branche stdin, ne trouve rien, ne sort rien, et la sonde
+## conclut "absent". Les trois sondes repondaient donc toujours faux, ce qui faisait
+## sauter les suppressions sur des objets bien presents.
 _zone_exists() {
-  proxmox_network.datacenter.list_sdn_zones.to.jsons.sh --json 2>/dev/null \
+  proxmox_network.datacenter.list_sdn_zones.to.jsons.sh --json 2>/dev/null < /dev/null \
     | jq -e --arg z "$SDN_ZONE" 'select(.zone == $z)' >/dev/null 2>&1
 }
 _vnet_exists() {
-  proxmox_network.datacenter.list_sdn_vnets.to.jsons.sh --json 2>/dev/null \
+  proxmox_network.datacenter.list_sdn_vnets.to.jsons.sh --json 2>/dev/null < /dev/null \
     | jq -e --arg v "$SDN_VNET" 'select(.vnet == $v)' >/dev/null 2>&1
 }
 _subnet_exists() {
-  proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null \
+  proxmox_network.datacenter.list_sdn_subnets.to.jsons.sh --json 2>/dev/null < /dev/null \
     | jq -e --arg s "$SDN_SUBNET_ID" 'select(.subnet == $s)' >/dev/null 2>&1
 }
 
