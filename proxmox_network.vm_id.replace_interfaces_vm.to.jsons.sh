@@ -14,7 +14,10 @@
 #
 # WHAT IS PRESERVED, AND WHAT IS NOT
 # The model is read from the existing card, so the caller does not repeat it. The
-# FIREWALL flag is read back too. The MAC ADDRESS IS NOT PRESERVED : iface_macaddr is
+# FIREWALL flag is read back too. The INTERFACE ID is asked for explicitly on the way back,
+# so net3 comes back as net3 and never lands on top of another card - see the comment on
+# the add below, it is the one thing here that could damage a card nobody asked to touch.
+# The MAC ADDRESS IS NOT PRESERVED : iface_macaddr is
 # consumed by the role but not yet declared in the two forwarding helpers, so it cannot
 # be passed from a devkit today. The new card therefore gets a fresh MAC.
 #
@@ -136,13 +139,22 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
   printf '{"proxmox_node":"%s","vm_id":%s,"vm_vmnet_id":%s}\n' "$NODE" "$VMID" "$NETID" \
     | proxmox_network.vm_id.delete_interfaces_vm.to.jsons.sh --json
 
+  ## vm_vmnet_id is passed EXPLICITLY, and that is not a detail. Left out, add_interfaces_vm
+  ## derives the id by COUNTING the cards that remain - the card just deleted is gone, so
+  ## the count is one short and only lands on the right id when the ids happen to run 0..n-1
+  ## and the moved card was the last of them.
+  ##
+  ## Take a VM with net0 and net1 and move net0 : the delete leaves one card, the count says
+  ## 1, and the add recreates net1 - ON TOP OF THE net1 THAT IS STILL THERE. A move of one
+  ## card would silently destroy another. Asking for the id we just deleted is the whole
+  ## point of a replace, and it costs one key.
   if [ -n "$OLD_FW" ]; then
-    printf '{"proxmox_node":"%s","vm_id":%s,"iface_model":"%s","iface_bridge":"%s","iface_firewall":"%s"}\n' \
-      "$NODE" "$VMID" "$MODEL" "$BRIDGE" "$OLD_FW" \
+    printf '{"proxmox_node":"%s","vm_id":%s,"vm_vmnet_id":%s,"iface_model":"%s","iface_bridge":"%s","iface_firewall":"%s"}\n' \
+      "$NODE" "$VMID" "$NETID" "$MODEL" "$BRIDGE" "$OLD_FW" \
       | proxmox_network.vm_id.add_interfaces_vm.to.jsons.sh --json
   else
-    printf '{"proxmox_node":"%s","vm_id":%s,"iface_model":"%s","iface_bridge":"%s"}\n' \
-      "$NODE" "$VMID" "$MODEL" "$BRIDGE" \
+    printf '{"proxmox_node":"%s","vm_id":%s,"vm_vmnet_id":%s,"iface_model":"%s","iface_bridge":"%s"}\n' \
+      "$NODE" "$VMID" "$NETID" "$MODEL" "$BRIDGE" \
       | proxmox_network.vm_id.add_interfaces_vm.to.jsons.sh --json
   fi
 
