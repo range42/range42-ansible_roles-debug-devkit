@@ -25,6 +25,10 @@
 # resolved from the vault when nothing is piped in. Pass a node name on STDIN to run the
 # query through a specific node.
 #
+# The OUT INTERFACE is reported too, as snat_out_iface. Proxmox auto-detects it from the default
+# route when it writes the vnet post-up hook, so no declaration holds it : this read is the only
+# place it can be seen.
+#
 # The optional filter applies to the source network as iptables renders it, mask included,
 # so 192.168.143 matches 192.168.143.0/24. To filter by target instead, pipe into jq on
 # .snat_target.
@@ -75,6 +79,7 @@ show_example() {
   echo "    $(basename "$0") | jq -r '.snat_source'"
   echo "    $(basename "$0") | jq -c 'select(.snat_target==\"MASQUERADE\")'      # the legacy hack rules"
   echo "    $(basename "$0") | jq -c 'select(.snat_count > 1)'                   # subnets an apply duplicated"
+  echo "    $(basename "$0") | jq -r '\(.snat_source) leaves through \(.snat_out_iface)'  # the egress device"
   echo "    $(basename "$0") | jq -r 'select(.snat_source==\"192.168.143.0/24\") | .snat_count'"
 }
 
