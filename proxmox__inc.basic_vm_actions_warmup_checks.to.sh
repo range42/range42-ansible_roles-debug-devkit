@@ -53,6 +53,7 @@ ALLOWED_ACTIONS=(
   network_list_sdn_zones
   network_list_sdn_vnets
   network_list_sdn_subnets
+  network_list_snat_rules
   #
   # SDN cluster-level, dans l'ordre operationnel : creer, modifier, supprimer,
   # appliquer, puis reconcilier les regles SNAT vivantes (l'apply n'est pas idempotent).
