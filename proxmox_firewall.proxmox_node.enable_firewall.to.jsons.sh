@@ -100,8 +100,21 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
     # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
     # exit 0
 
+    # On a refusal the play stops before the task that builds the json payload, so the shared
+    # normaliser - which keeps only the key named after the action - prints nothing. The real
+    # message is discarded there, upstream of this wrapper : do not look for it here. All this
+    # can do is say so, and point at --text which does carry it.
+    _dk_rc=0
     printf '%s\n' "$CURRENT_JSON_LINE" |
-      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" || _dk_rc=$?
+
+    if [ "$_dk_rc" -ne 0 ]; then
+      devkit_utils.text.echo_error.to.text.to.stderr.sh \
+        "refused or failed (rc=${_dk_rc}). stdout is empty : the payload is built only on success."
+      devkit_utils.text.echo_error.to.text.to.stderr.sh \
+        "re-run the same command with --text to read the reason."
+      exit "$_dk_rc"
+    fi
 
   else
 
