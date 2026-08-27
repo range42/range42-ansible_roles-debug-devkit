@@ -100,19 +100,18 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
     # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
     # exit 0
 
-    # On a refusal the play stops before the task that builds the json payload, so the shared
-    # normaliser - which keeps only the key named after the action - prints nothing. The real
-    # message is discarded there, upstream of this wrapper : do not look for it here. All this
-    # can do is say so, and point at --text which does carry it.
+    # The shared normaliser keeps only the key named after the action, and that key is built
+    # by the last task of the play. So when the play stops early nothing reaches stdout, and
+    # the role's own message is discarded upstream of here : do not look for it in this file.
     _dk_rc=0
     printf '%s\n' "$CURRENT_JSON_LINE" |
       proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" || _dk_rc=$?
 
     if [ "$_dk_rc" -ne 0 ]; then
       devkit_utils.text.echo_error.to.text.to.stderr.sh \
-        "refused or failed (rc=${_dk_rc}). stdout is empty : the payload is built only on success."
+        "stopped without printing anything (rc=${_dk_rc}). This action checks that a way back in exists BEFORE it changes the firewall, so a refusal leaves the configuration as it was."
       devkit_utils.text.echo_error.to.text.to.stderr.sh \
-        "re-run the same command with --text to read the reason."
+        "run the same command with --text instead of --json : it says whether the check refused or the Proxmox could not be reached, and what to run first."
       exit "$_dk_rc"
     fi
 
