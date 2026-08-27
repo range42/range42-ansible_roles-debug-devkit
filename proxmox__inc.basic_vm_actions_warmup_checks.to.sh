@@ -99,11 +99,32 @@ ALLOWED_ACTIONS=(
   firewall_node_enable
   firewall_node_disable
   firewall_node_apply_iptables_rule
+  firewall_node_list_iptables_rule
+  firewall_node_delete_iptables_rule
   # anti-lockout : a jouer AVANT firewall_node_enable, jamais apres
   firewall_node_enable_management_access
   #
   firewall_dc_enable
   firewall_dc_disable
+  firewall_dc_list_iptables_rule
+  firewall_dc_apply_iptables_rule
+  firewall_dc_delete_iptables_rule
+  # LECTURE des options, aux trois niveaux. Elle manquait partout : le role ne savait que
+  # PUT l'interrupteur, jamais le GET, donc aucune ecriture n'etait idempotente et aucun
+  # assert ne pouvait verifier sa premisse. Un enable lu ici est une condition necessaire,
+  # jamais suffisante : sans le flag de la carte, rien n'est filtre.
+  firewall_dc_list_options
+  firewall_node_list_options
+  firewall_vm_list_options
+  # alias du DATACENTER : un alias est un objet cluster-wide et par invite, l'api n'en
+  # expose aucun au niveau d'un noeud. Un alias datacenter est deja visible des regles
+  # de chaque noeud, donc il n'y a rien qu'un alias de noeud pourrait cadrer.
+  firewall_dc_list_iptables_alias
+  firewall_dc_add_iptables_alias
+  firewall_dc_delete_iptables_alias
+  # anti-lockout du DATACENTER : le niveau retenu, il couvre tout noeud a venir sans
+  # qu'on ait a le rejouer. A lancer AVANT toute activation, jamais apres.
+  firewall_dc_enable_management_access
   #
   cluster_set_tag
   #

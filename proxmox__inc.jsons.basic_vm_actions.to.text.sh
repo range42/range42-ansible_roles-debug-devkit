@@ -213,6 +213,7 @@ if [ ! -t 0 ]; then
       # crash it, it silently keeps the default instead of the value the caller passed.
 
       assign_if_not_empty "vm_fw_ssh_accept_pos" "$line" ".vm_fw_ssh_accept_pos"
+      assign_if_not_empty "vm_fw_mgmt_source" "$line" ".vm_fw_mgmt_source"
       assign_if_not_empty "vm_fw_ssh_accept_comment" "$line" ".vm_fw_ssh_accept_comment"
       assign_if_not_empty "vm_fw_drop_all_pos" "$line" ".vm_fw_drop_all_pos"
       assign_if_not_empty "vm_fw_drop_all_comment" "$line" ".vm_fw_drop_all_comment"
@@ -254,6 +255,58 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "node_fw_ssh_pos" "$line" ".node_fw_ssh_pos"
       assign_if_not_empty "node_fw_ssh_comment" "$line" ".node_fw_ssh_comment"
       assign_if_not_empty "node_fw_mgmt_source" "$line" ".node_fw_mgmt_source"
+
+      # fw - datacenter level
+      #
+      # Meme regle qu'au-dessus : toute cle qu'une action consomme DOIT etre declaree ici,
+      # sinon elle est jetee entre la ligne JSON et le playbook. Et elle doit l'etre dans les
+      # DEUX normaliseurs, sinon le chemin --text la perd en silence.
+
+      assign_if_not_empty "dc_fw_action" "$line" ".dc_fw_action"
+      assign_if_not_empty "dc_fw_type" "$line" ".dc_fw_type"
+      assign_if_not_empty "dc_fw_iface" "$line" ".dc_fw_iface"
+      assign_if_not_empty "dc_fw_source" "$line" ".dc_fw_source"
+      assign_if_not_empty "dc_fw_dest" "$line" ".dc_fw_dest"
+      assign_if_not_empty "dc_fw_proto" "$line" ".dc_fw_proto"
+      assign_if_not_empty "dc_fw_dport" "$line" ".dc_fw_dport"
+      assign_if_not_empty "dc_fw_sport" "$line" ".dc_fw_sport"
+      assign_if_not_empty "dc_fw_enable" "$line" ".dc_fw_enable"
+      assign_if_not_empty "dc_fw_comment" "$line" ".dc_fw_comment"
+      assign_if_not_empty "dc_fw_log" "$line" ".dc_fw_log"
+      assign_if_not_empty "dc_fw_pos" "$line" ".dc_fw_pos"
+      assign_if_not_empty "dc_fw_api_port" "$line" ".dc_fw_api_port"
+      assign_if_not_empty "dc_fw_ssh_port" "$line" ".dc_fw_ssh_port"
+      assign_if_not_empty "dc_fw_api_pos" "$line" ".dc_fw_api_pos"
+      assign_if_not_empty "dc_fw_ssh_pos" "$line" ".dc_fw_ssh_pos"
+      assign_if_not_empty "dc_fw_alias_name" "$line" ".dc_fw_alias_name"
+      assign_if_not_empty "dc_fw_alias_cidr" "$line" ".dc_fw_alias_cidr"
+      assign_if_not_empty "dc_fw_alias_comment" "$line" ".dc_fw_alias_comment"
+      assign_if_not_empty "dc_fw_opt_enable" "$line" ".dc_fw_opt_enable"
+      assign_if_not_empty "dc_fw_opt_policy_in" "$line" ".dc_fw_opt_policy_in"
+      assign_if_not_empty "dc_fw_opt_policy_out" "$line" ".dc_fw_opt_policy_out"
+      assign_if_not_empty "dc_fw_opt_ebtables" "$line" ".dc_fw_opt_ebtables"
+      assign_if_not_empty "dc_fw_opt_log_ratelimit" "$line" ".dc_fw_opt_log_ratelimit"
+      assign_if_not_empty "node_fw_opt_enable" "$line" ".node_fw_opt_enable"
+      assign_if_not_empty "node_fw_opt_log_level_in" "$line" ".node_fw_opt_log_level_in"
+      assign_if_not_empty "node_fw_opt_log_level_out" "$line" ".node_fw_opt_log_level_out"
+      assign_if_not_empty "node_fw_opt_nosmurfs" "$line" ".node_fw_opt_nosmurfs"
+      assign_if_not_empty "node_fw_opt_tcpflags" "$line" ".node_fw_opt_tcpflags"
+      assign_if_not_empty "node_fw_opt_ndp" "$line" ".node_fw_opt_ndp"
+      assign_if_not_empty "node_fw_opt_nf_conntrack_max" "$line" ".node_fw_opt_nf_conntrack_max"
+      assign_if_not_empty "node_fw_opt_protection_synflood" "$line" ".node_fw_opt_protection_synflood"
+      assign_if_not_empty "vm_fw_opt_enable" "$line" ".vm_fw_opt_enable"
+      assign_if_not_empty "vm_fw_opt_policy_in" "$line" ".vm_fw_opt_policy_in"
+      assign_if_not_empty "vm_fw_opt_policy_out" "$line" ".vm_fw_opt_policy_out"
+      assign_if_not_empty "vm_fw_opt_ipfilter" "$line" ".vm_fw_opt_ipfilter"
+      assign_if_not_empty "vm_fw_opt_macfilter" "$line" ".vm_fw_opt_macfilter"
+      assign_if_not_empty "vm_fw_opt_dhcp" "$line" ".vm_fw_opt_dhcp"
+      assign_if_not_empty "vm_fw_opt_ndp" "$line" ".vm_fw_opt_ndp"
+      assign_if_not_empty "vm_fw_opt_radv" "$line" ".vm_fw_opt_radv"
+      assign_if_not_empty "vm_fw_opt_log_level_in" "$line" ".vm_fw_opt_log_level_in"
+      assign_if_not_empty "vm_fw_opt_log_level_out" "$line" ".vm_fw_opt_log_level_out"
+      assign_if_not_empty "dc_fw_mgmt_source" "$line" ".dc_fw_mgmt_source"
+      assign_if_not_empty "dc_fw_api_comment" "$line" ".dc_fw_api_comment"
+      assign_if_not_empty "dc_fw_ssh_comment" "$line" ".dc_fw_ssh_comment"
 
       # sdn - zone
 
