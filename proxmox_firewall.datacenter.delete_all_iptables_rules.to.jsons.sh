@@ -116,11 +116,17 @@ esac
 # not move when a neighbour disappears.
 #
 
+#
+# This normaliser flattens either shape to one object per line, so everything below it works
+# on the same contract whichever the action publishes.
+#
+_lines() { jq -c 'if type=="array" then .[] else . end' ; }
+
 INPUT_JSON=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "STR::proxmox_node" "STR::action")
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-FIRST_READ=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.datacenter.list_iptables_rules.to.jsons.sh)
+FIRST_READ=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.datacenter.list_iptables_rules.to.jsons.sh | _lines)
 TOTAL=$(printf '%s\n' "$FIRST_READ" | grep -c . || true)
 
 if [ "$TOTAL" -eq 0 ]; then
@@ -137,12 +143,12 @@ while : ; do
   ROUND=$((ROUND + 1))
 
   if [ "$ROUND" -gt "$BOUND" ]; then
-    REMAINING=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.datacenter.list_iptables_rules.to.jsons.sh | grep -c . || true)
+    REMAINING=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.datacenter.list_iptables_rules.to.jsons.sh | _lines | grep -c . || true)
     devkit_utils.text.echo_error.to.text.to.stderr.sh "did not converge after ${BOUND} rounds, ${REMAINING} rule(s) still present : refusing to keep looping."
     exit 1
   fi
 
-  TARGET=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.datacenter.list_iptables_rules.to.jsons.sh | jq -s -c 'if length == 0 then empty else .[0] end')
+  TARGET=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.datacenter.list_iptables_rules.to.jsons.sh | _lines | jq -s -c 'if length == 0 then empty else .[0] end')
 
   [ -n "${TARGET//[[:space:]]/}" ] || break
 

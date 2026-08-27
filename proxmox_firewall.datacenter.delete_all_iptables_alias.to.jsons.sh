@@ -97,9 +97,14 @@ esac
 # so in its own header.
 #
 
+# This normaliser flattens either shape to one object per line, so everything below it works
+# on the same contract whichever the action publishes.
+#
+_lines() { jq -c 'if type=="array" then .[] else . end' ; }
+
 JSON_LINE_REQ=$(
   devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "STR::proxmox_node" "STR::action" |
-    proxmox_firewall.datacenter.list_iptables_alias.to.jsons.sh
+    proxmox_firewall.datacenter.list_iptables_alias.to.jsons.sh | _lines
 )
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####

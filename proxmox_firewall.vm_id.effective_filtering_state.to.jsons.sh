@@ -108,10 +108,22 @@ esac
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
+_lines() { jq -c 'if type=="array" then .[] else . end' ; }
+
+# So the two concerns are separated : keep only the lines that ARE json, then normalise shape.
+_json_only() {
+  local l
+  while IFS= read -r l ; do
+    [ -n "${l//[[:space:]]/}" ] || continue
+    printf '%s\n' "$l" | jq -e . >/dev/null 2>&1 && printf '%s\n' "$l"
+  done
+  return 0
+}
+
 _last_object() {
   local out
-  out=$(grep -E '^[[:space:]]*\{' || true)
-  [ -n "$out" ] || { printf '{}\n' ; return 0 ; }
+  out=$(_json_only | _lines 2>/dev/null || true)
+  [ -n "${out//[[:space:]]/}" ] || { printf '{}\n' ; return 0 ; }
   printf '%s\n' "$out" | tail -1
 }
 
@@ -123,7 +135,7 @@ INPUT_JSON=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh \
 DC_JSON=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.datacenter.list_options.to.jsons.sh --json | _last_object)
 ND_JSON=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.proxmox_node.list_options.to.jsons.sh --json | _last_object)
 VM_JSON=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.vm_id.list_options.to.jsons.sh --json | _last_object)
-CARDS_JSON=$(printf '%s\n' "$INPUT_JSON" | proxmox_network.vm_id.list_interfaces_vm.to.jsons.sh --json | grep -E '^[[:space:]]*\{' || true)
+CARDS_JSON=$(printf '%s\n' "$INPUT_JSON" | proxmox_network.vm_id.list_interfaces_vm.to.jsons.sh --json | _json_only | _lines || true)
 
 if [ -z "${CARDS_JSON//[[:space:]]/}" ]; then
   devkit_utils.text.echo_error.to.text.to.stderr.sh "the guest reports no network card : nothing to report on."
