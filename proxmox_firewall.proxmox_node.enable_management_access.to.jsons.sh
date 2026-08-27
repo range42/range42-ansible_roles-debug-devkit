@@ -18,9 +18,12 @@
 # precondition. `firewall_node_enable` now refuses to arm a node this has not run on.
 #
 # WHAT IT REPORTS
-# The action publishes what it FOUND as well as what was asked of it : `*_pos_requested`
-# is the caller's parameter, `*_pos_before` is where the chain actually held that accept,
-# and `first_deny_pos_before` is the barrier they are measured against. A value of 99999
+# OUTPUT : ONE LINE PER RULE, and `node_fw_rule` says which one - "api" or "ssh".
+# Each line carries what was ASKED of the action and what it FOUND : `node_fw_pos_requested`
+# is the caller's parameter, `node_fw_pos_before` is where the chain actually held that
+# accept, and `node_fw_first_deny_pos_before` is the barrier they are measured against.
+# `node_fw_already_present` is the one to select on : jq 'select(.node_fw_already_present == false)'
+# lists exactly what got posted. A value of 99999
 # means there was no deny at all. Read the `_before` fields to know the state, never the
 # `_requested` ones.
 #
@@ -149,8 +152,11 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
   if [[ "$OUTPUT_JSON" == true ]]; then
 
+    # This action publishes a LIST - one object per rule it manages - so the wrapper flattens
+    # it like every other list wrapper. One json object per line, in and out.
     printf '%s\n' "$CURRENT_JSON_LINE" |
-      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+      jq -c ".[]"
 
   else
 

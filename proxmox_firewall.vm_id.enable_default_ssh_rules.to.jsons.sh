@@ -19,6 +19,13 @@
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
+#
+# OUTPUT : ONE LINE PER RULE, and `vm_fw_rule` says which one - "ssh_accept" or "drop_all".
+# `vm_fw_already_present` is the one to select on : jq 'select(.vm_fw_already_present == false)'
+# lists exactly what got posted. The drop carries no `vm_fw_dport` : it is a bare DROP and has
+# no port, so the key is absent rather than empty.
+#
+
 set -euo pipefail
 ACTION="firewall_vm_enable_default_ssh_rules"
 DEFAULT_OUTPUT_JSON=true
@@ -135,8 +142,11 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
     # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
     # exit 0
 
+    # This action publishes a LIST - one object per rule it manages - so the wrapper flattens
+    # it like every other list wrapper. One json object per line, in and out.
     printf '%s\n' "$CURRENT_JSON_LINE" |
-      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+      jq -c ".[]"
 
   else
 
