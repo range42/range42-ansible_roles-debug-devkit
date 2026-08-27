@@ -48,7 +48,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo "                                $(basename "$0") [-h|--help] "
   echo "  STDIN :: [proxmox_api_host] | $(basename "$0") [--json]    - force output as json *default"
   echo "  STDIN :: [proxmox_api_host] | $(basename "$0") [--text]    - force output as text"
-  echo ""no
+  echo ""
   echo EXAMPLE
   echo
   echo "$(show_example)"
