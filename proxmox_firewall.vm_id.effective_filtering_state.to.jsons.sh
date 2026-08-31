@@ -48,19 +48,26 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo "  none : this wrapper only reads"
   echo ""
-  echo "WHY FOUR LEVELS AND NOT THREE"
+  echo "WHY FOUR LEVELS, AND WHY ONLY THREE OF THEM DECIDE"
   echo
   echo "  Three switches live in the api options : datacenter, node and guest. A fourth lives"
-  echo "  on the network card itself, as firewall=1 in the guest config. Measured : with the"
-  echo "  card flag absent, NOTHING is filtered even with the three others enabled. The card"
-  echo "  flag is the only one that filters, so reading the three options alone answers a"
-  echo "  different question than the one an operator is asking."
+  echo "  on the network card itself, as firewall=1 in the guest config."
   echo
-  echo "  This wrapper reads all four and says which ones are off, per card."
+  echo "  A guest is filtered when the DATACENTER switch is on, the GUEST switch is on, and"
+  echo "  the card carries the flag. All three are necessary and none of them is sufficient"
+  echo "  on its own. Measured on a live node : with the datacenter switch off, nothing is"
+  echo "  filtered at all, whatever the other two say."
+  echo
+  echo "  The NODE switch is read and reported here, but it is NOT part of the verdict. It"
+  echo "  installs the host chain and has no effect on a guest chain. Counting it would turn"
+  echo "  a filtered guest into a false negative, and would name an unrelated switch as the"
+  echo "  cause."
   echo ""
   echo "READING THE OUTPUT"
   echo
-  echo "  One line per network card. effectively_filtered is true only when all four are on."
+  echo "  One line per network card. effectively_filtered is true when the datacenter"
+  echo "  switch, the guest switch and the card flag are all on. The node switch is"
+  echo "  reported for information and never enters the verdict."
   echo "  missing lists the ones that are not, so the answer is actionable rather than a"
   echo "  verdict with no cause. card_firewall_flag is absent when the card carries no flag,"
   echo "  which is not the same as a flag set to zero."
@@ -165,10 +172,10 @@ REPORT=$(printf '%s\n' "$CARDS_JSON" | jq -s -c \
     node_enable:          $n,
     guest_enable:         $g,
     card_firewall_flag:   $f,
-    effectively_filtered: (on($d) and on($n) and on($g) and on($f)),
+    node_enable_is_informational: true,
+    effectively_filtered: (on($d) and on($g) and on($f)),
     missing: (
       (if on($d) then [] else ["datacenter_enable"] end) +
-      (if on($n) then [] else ["node_enable"] end) +
       (if on($g) then [] else ["guest_enable"] end) +
       (if on($f) then [] else ["card_firewall_flag"] end)
     )
