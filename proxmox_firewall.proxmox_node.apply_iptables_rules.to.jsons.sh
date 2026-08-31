@@ -4,9 +4,10 @@
 # Apply ONE firewall rule on ONE NODE.
 #
 # TWO FIELDS ARE WORTH PASSING EXPLICITLY
-# node_fw_pos : rules are evaluated in order, and a position left to the API default lands
-#             wherever that default happens to be - which decides whether the rule takes
-#             effect at all.
+# node_fw_pos : NOT ACCEPTED ANY MORE. PVE inserts at the TOP of the chain and ignores
+#             any position asked for, measured four times the 2026-08-28. Read the chain
+#             back with the list action to know where a rule landed. The delete action
+#             keeps its position : DELETE by position is the only call the API offers.
 # node_fw_enable : without it the rule is stored DISABLED. It appears in the configuration,
 #             it reads as present, and it grants nothing. Measured the 2026-08-27.
 #
@@ -94,9 +95,9 @@ show_example() {
     '{"vm_id":100,"node_fw_action":"ACCEPT","node_fw_type":"in","node_fw_proto":"tcp","node_fw_dport":"22","node_fw_enable":1,"node_fw_sport":"1024"}'
     '{"vm_id":100,"node_fw_action":"ACCEPT","node_fw_type":"in","node_fw_proto":"tcp","node_fw_dport":"22","node_fw_enable":1,"node_fw_comment":"TEST COMMENT"}'
     '{"vm_id":100,"node_fw_action":"ACCEPT","node_fw_type":"in","node_fw_proto":"tcp","node_fw_dport":"22","node_fw_enable":1,"node_fw_comment":"ABCD1234 - 123123"}'
-    '{"vm_id":100,"node_fw_action":"ACCEPT","node_fw_type":"in","node_fw_proto":"tcp","node_fw_dport":"22","node_fw_enable":1,"node_fw_pos":4242}'
+    '{"vm_id":100,"node_fw_action":"ACCEPT","node_fw_type":"in","node_fw_proto":"tcp","node_fw_dport":"22","node_fw_enable":1}'
     '{"vm_id":100,"node_fw_action":"ACCEPT","node_fw_type":"in","node_fw_proto":"tcp","node_fw_dport":"22","node_fw_enable":1,"node_fw_log":"info"}'
-    '{"vm_id":100,"node_fw_action":"ACCEPT","node_fw_type":"in","node_fw_proto":"tcp","node_fw_dport":"22","node_fw_enable":1,"node_fw_iface":"net0","node_fw_source":"192.168.1.0/24","node_fw_dest":"0.0.0.0/0","node_fw_sport":"1024","node_fw_comment":"Test comment","node_fw_pos":5,"node_fw_log":"DEBUG"}'
+    '{"vm_id":100,"node_fw_action":"ACCEPT","node_fw_type":"in","node_fw_proto":"tcp","node_fw_dport":"22","node_fw_enable":1,"node_fw_iface":"net0","node_fw_source":"192.168.1.0/24","node_fw_dest":"0.0.0.0/0","node_fw_sport":"1024","node_fw_comment":"Test comment","node_fw_log":"DEBUG"}'
 
     #
 

@@ -87,9 +87,9 @@ show_example() {
     '{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1,"vm_fw_sport":"1024"}'
     '{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1,"vm_fw_comment":"TEST COMMENT"}'
     '{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1,"vm_fw_comment":"ABCD1234 - 123123"}'
-    '{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1,"vm_fw_pos":4242}'
+    '{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1}'
     '{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1,"vm_fw_log":"info"}'
-    '{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1,"vm_fw_iface":"net0","vm_fw_source":"192.168.1.0/24","vm_fw_dest":"0.0.0.0/0","vm_fw_sport":"1024","vm_fw_comment":"Test comment","vm_fw_pos":5,"vm_fw_log":"DEBUG"}'
+    '{"vm_id":100,"vm_fw_action":"ACCEPT","vm_fw_type":"in","vm_fw_proto":"tcp","vm_fw_dport":"22","vm_fw_enable":1,"vm_fw_iface":"net0","vm_fw_source":"192.168.1.0/24","vm_fw_dest":"0.0.0.0/0","vm_fw_sport":"1024","vm_fw_comment":"Test comment","vm_fw_log":"DEBUG"}'
 
     #
 
