@@ -120,27 +120,27 @@ JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "ST
 
 printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
+  # enrich json with vm_name
+  VM_NAME=$(
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      proxmox_vm.vm_id.list_vm_and_extract_vm_name.to.jsons.sh |
+      jq -r '.vm_name // empty'
+  )
+
+  # merge jsons
+
+  NEW_CURRENT_JSON_LINE=$(
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      jq -c --arg jq_vm_name_v "$VM_NAME" '. + { ("vm_name"): $jq_vm_name_v }'
+  )
+
+  # update current json line
+  CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
+
+  # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
+  # exit 0
+
   if [[ "$OUTPUT_JSON" == true ]]; then
-
-    # enrich json with vm_name
-    VM_NAME=$(
-      printf '%s\n' "$CURRENT_JSON_LINE" |
-        proxmox_vm.vm_id.list_vm_and_extract_vm_name.to.jsons.sh |
-        jq -r '.vm_name // empty'
-    )
-
-    # merge jsons
-
-    NEW_CURRENT_JSON_LINE=$(
-      printf '%s\n' "$CURRENT_JSON_LINE" |
-        jq -c --arg jq_vm_name_v "$VM_NAME" '. + { ("vm_name"): $jq_vm_name_v }'
-    )
-
-    # update current json line
-    CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
-
-    # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
-    # exit 0
 
     # This action publishes a LIST - one object per rule it manages - so the wrapper flattens
     # it like every other list wrapper. One json object per line, in and out.
