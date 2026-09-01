@@ -131,9 +131,9 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
     if [ "$_dk_rc" -ne 0 ]; then
       devkit_utils.text.echo_error.to.text.to.stderr.sh \
-        "stopped without printing anything (rc=${_dk_rc}). This action checks that a way back in exists BEFORE it changes the firewall, so a refusal leaves the configuration as it was."
+        "stopped without printing anything (rc=${_dk_rc}). TWO causes are possible and they are NOT the same : the guard refused BEFORE touching anything, or the change went through and a later step failed."
       devkit_utils.text.echo_error.to.text.to.stderr.sh \
-        "run the same command with --text instead of --json : it says whether the check refused or the Proxmox could not be reached, and what to run first."
+        "read the switch to tell them apart : proxmox_firewall.vm_id.list_options.to.jsons.sh . A vm_fw_opt_enable of 0 means nothing was changed. A 1 means the firewall IS armed despite this error, and only the reporting failed. Then run the same command with --text to see which step stopped the play."
       exit "$_dk_rc"
     fi
 
