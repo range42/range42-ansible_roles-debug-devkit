@@ -131,7 +131,7 @@ FIRST_READ=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.vm_id.list_iptables_
 TOTAL=$(printf '%s\n' "$FIRST_READ" | grep -c . || true)
 
 if [ "$TOTAL" -eq 0 ]; then
-  devkit_utils.text.echo_error.to.text.to.stderr.sh "the chain is already empty : nothing to delete."
+  devkit_utils.text.echo_pass.to.text.to.stderr.sh "the chain is already empty : nothing to delete."
   exit 0
 fi
 
@@ -171,4 +171,4 @@ while : ; do
 
 done
 
-devkit_utils.text.echo_error.to.text.to.stderr.sh "deleted ${DELETED} rule(s) of the ${TOTAL} present at the first read, chain now empty."
+devkit_utils.text.echo_pass.to.text.to.stderr.sh "deleted ${DELETED} rule(s) of the ${TOTAL} present at the first read, chain now empty."
