@@ -93,30 +93,82 @@ esac
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-JSON_LINE_REQ=$(
-  devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::proxmox_node" "STR::vm_name" "STR::action" |
-    proxmox_firewall.vm_id.list_iptables_rules.to.jsons.sh
-)
+#
+# ONE AT A TIME, RE-READING THE CHAIN BEFORE EVERY DELETE.
+#
+# A rule is addressed by its POSITION, and the api RENUMBERS the chain after every delete.
+# Any approach that reads the chain once and then works through the positions it saw is
+# working from ranks that stopped being true after the first delete. Measured on a chain of
+# two identical rules handled that way : one deleted, the survivor renumbered to position 0
+# and never touched.
+#
+# So the chain is read again at the top of every round, one rule is deleted, and the loop
+# starts over. Positions are therefore never older than the call that uses them. This costs
+# one api round trip per rule, which is the price of not guessing.
+#
+# A bound is required, not optional : if a delete fails without saying so, the rule stays,
+# matches again, and the loop runs forever. The bound is the initial count plus a margin,
+# and falling through it is an error that names how many rules are left.
+#
+# The remaining window is between this round's read and this round's delete. It is
+# milliseconds rather than however long since an operator last looked, and closing it
+# entirely would need the api's digest guard, which is not used anywhere in this project yet.
+#
+# The alias equivalent needs none of this : an alias is addressed by NAME, and a name does
+# not move when a neighbour disappears.
+#
+
+# This normaliser flattens either shape to one object per line, so everything below it works
+# on the same contract whichever the action publishes.
+#
+_lines() { jq -c 'if type=="array" then .[] else . end' ; }
+
+INPUT_JSON=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::proxmox_node" "STR::vm_name" "STR::action")
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
+FIRST_READ=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.vm_id.list_iptables_rules.to.jsons.sh | _lines)
+TOTAL=$(printf '%s\n' "$FIRST_READ" | grep -c . || true)
 
-  # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
-  # exit 0
+if [ "$TOTAL" -eq 0 ]; then
+  devkit_utils.text.echo_error.to.text.to.stderr.sh "the chain is already empty : nothing to delete."
+  exit 0
+fi
+
+BOUND=$((TOTAL + 2))
+ROUND=0
+DELETED=0
+
+while : ; do
+
+  ROUND=$((ROUND + 1))
+
+  if [ "$ROUND" -gt "$BOUND" ]; then
+    REMAINING=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.vm_id.list_iptables_rules.to.jsons.sh | _lines | grep -c . || true)
+    devkit_utils.text.echo_error.to.text.to.stderr.sh "did not converge after ${BOUND} rounds, ${REMAINING} rule(s) still present : refusing to keep looping."
+    exit 1
+  fi
+
+  TARGET=$(printf '%s\n' "$INPUT_JSON" | proxmox_firewall.vm_id.list_iptables_rules.to.jsons.sh | _lines | jq -s -c 'if length == 0 then empty else .[0] end')
+
+  [ -n "${TARGET//[[:space:]]/}" ] || break
 
   if [[ "$OUTPUT_JSON" == true ]]; then
 
-    printf '%s\n' "$CURRENT_JSON_LINE" |
-      jq -c ' {proxmox_node, vm_id, vm_fw_pos }' |
-      proxmox_firewall.vm_id.delete_iptables_rules.to.jsons.sh
+    printf '%s\n' "$TARGET" |
+      jq -c '{ proxmox_node, vm_id, vm_fw_pos }' |
+      proxmox_firewall.vm_id.delete_iptables_rules.to.jsons.sh --json
 
   else
 
-    printf '%s\n' "$CURRENT_JSON_LINE" |
-      jq -c ' {proxmox_node, vm_id, vm_fw_pos }' |
-      proxmox_firewall.vm_id.delete_iptables_rules.to.jsons.sh
+    printf '%s\n' "$TARGET" |
+      jq -c '{ proxmox_node, vm_id, vm_fw_pos }' |
+      proxmox_firewall.vm_id.delete_iptables_rules.to.jsons.sh --text
 
   fi
 
+  DELETED=$((DELETED + 1))
+
 done
+
+devkit_utils.text.echo_error.to.text.to.stderr.sh "deleted ${DELETED} rule(s) of the ${TOTAL} present at the first read, chain now empty."
