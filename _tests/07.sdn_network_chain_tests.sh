@@ -12,8 +12,10 @@
 #
 # THE VM STEP, AND WHY IT ASKS BEFORE MOVING ANYTHING
 # It is skipped unless a VM id is given. It is the only destructive step of this file : the
-# card is deleted and recreated by the role, so ITS MAC CHANGES, twice over a round trip.
-# Never point it at a VM you reach through the card being moved.
+# card is deleted and recreated by the role. ITS MAC IS PRESERVED - read back and resent, so
+# the guest keeps the address its netplan matches on. It used to change, twice over a round
+# trip, and that cost two guests. Still, the card does not exist between the two calls :
+# never point this at a VM you reach through the card being moved.
 #
 # Because it is destructive it is gated : the VM is looked up on the node first, and each
 # leg of the move is confirmed on the terminal before it runs. Refusing a leg skips it,
@@ -413,7 +415,7 @@ else
         echo "  --vm-stay : the card is left on $VNET"
         return 0
       fi
-      confirm "delete and recreate net$netid of vm $VMID, $VNET -> $RETURN_BRIDGE (the MAC changes again)" \
+      confirm "delete and recreate net$netid of vm $VMID, $VNET -> $RETURN_BRIDGE (the MAC is preserved)" \
         || return 0
       out=$(move_card "$netid" "$RETURN_BRIDGE")
       assert_eq "the return leg reports it came off the vnet" "$VNET" \
@@ -436,7 +438,7 @@ else
       echo "  net$NETID is on $ORIG_BRIDGE, it will go to $VNET and back to $RETURN_BRIDGE"
 
       #### leg 1 : onto the vnet
-      if confirm "delete and recreate net$NETID of vm $VMID, $ORIG_BRIDGE -> $VNET (the MAC changes)" ; then
+      if confirm "delete and recreate net$NETID of vm $VMID, $ORIG_BRIDGE -> $VNET (the MAC is preserved)" ; then
         OUT=$(move_card "$NETID" "$VNET")
         ## Recorded before the assertions : if one of them exits the script, the trap still
         ## has to know the card is out there.

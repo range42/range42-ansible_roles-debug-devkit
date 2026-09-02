@@ -12,18 +12,24 @@
 #
 # The verb says delete is inside, on purpose : the card is destroyed, not edited.
 #
-# WHAT IS PRESERVED, AND WHAT IS NOT
-# The model is read from the existing card, so the caller does not repeat it. The
-# FIREWALL flag is read back too. The INTERFACE ID is asked for explicitly on the way back,
-# so net3 comes back as net3 and never lands on top of another card - see the comment on
-# the add below, it is the one thing here that could damage a card nobody asked to touch.
-# The MAC ADDRESS IS NOT PRESERVED : iface_macaddr is
-# consumed by the role but not yet declared in the two forwarding helpers, so it cannot
-# be passed from a devkit today. The new card therefore gets a fresh MAC.
+# WHAT IS PRESERVED
+# The MODEL is read from the existing card, so the caller does not repeat it. The FIREWALL
+# flag is read back too. The INTERFACE ID is asked for explicitly on the way back, so net3
+# comes back as net3 and never lands on top of another card - see the comment on the add
+# below, it is the one thing here that could damage a card nobody asked to touch.
 #
-# That matters : a DHCP reservation, an ipset or a firewall alias keyed on the old MAC
-# will not follow. For the case this was written for, pulling a test VM off the
-# management bridge, a new MAC is exactly what you want. For anything else, check first.
+# The MAC is read back and resent. It used to change, and this header used to call that
+# wanted : it was a limitation, not a choice - iface_macaddr was consumed by the role but
+# undeclared in the two forwarding helpers, so a devkit could not pass it. It cost two
+# guests, MEASURED : cloud-init writes a netplan carrying a match on macaddress, so a new
+# MAC makes netplan apply answer "Cannot find unique matching interface" and the guest
+# loses its network. Nothing shows on the Proxmox side - the api reports a healthy card and
+# only the guest knows it is cut. A DHCP reservation, an ipset or a firewall alias keyed on
+# the MAC breaks the same way.
+#
+# A replace that does not keep the MAC is not a replace. Want a fresh MAC ? Call delete then
+# add yourself, without iface_macaddr. A card whose MAC cannot be read is REFUSED here,
+# before anything is destroyed, the same way an unreadable model already is.
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -60,8 +66,9 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo "  required : proxmox_node, vm_id, vm_vmnet_id, iface_bridge"
   echo "  optional : iface_model (default : read from the card being replaced)"
   echo
-  echo "  DESTRUCTIVE : the card is deleted and recreated, its MAC changes."
-  echo "  For a non destructive attach, use add_interfaces_vm."
+  echo "  DESTRUCTIVE : the card is deleted and recreated. Its slot, model, firewall flag"
+  echo "  and MAC are preserved, and a card whose MAC cannot be read is refused before"
+  echo "  anything is destroyed. For a non destructive attach, use add_interfaces_vm."
   echo
   echo EXAMPLE
   echo
@@ -115,21 +122,34 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
   OLD_BRIDGE=$(printf '%s' "$CARD" | jq -r '.vm_network_bridge // empty')
   OLD_MODEL=$(printf  '%s' "$CARD" | jq -r '.vm_network_type   // empty')
   OLD_FW=$(printf     '%s' "$CARD" | jq -r '.vm_network_firewall // empty')
+  OLD_MAC=$(printf    '%s' "$CARD" | jq -r '.vm_network_mac    // empty')
   MODEL="${MODEL_IN:-$OLD_MODEL}"
 
   [ -n "$MODEL" ] || { _err "could not determine the card model, pass iface_model"; exit 1; }
 
+  ## Refused BEFORE the delete, not after. The MAC is read positionally from the first
+  ## segment, which the api normalises to <model>=<MAC> : unreadable means the card is not
+  ## shaped as expected, and recreating it would hand the guest a MAC its netplan does not
+  ## match. There is no safe way to put that back, so we do not take the card apart.
+  if [ -z "$OLD_MAC" ]; then
+    _err "could not read the MAC of net$NETID on VM $VMID. NOTHING was changed."
+    _err "a replace that cannot resend the MAC would cut the guest : see the header."
+    _err "read the card : echo \"$VMID\" | proxmox_network.vm_id.list_interfaces_vm.to.jsons.sh"
+    exit 1
+  fi
+
   if [ "$OLD_BRIDGE" = "$BRIDGE" ]; then
     _trace "net$NETID is already on $BRIDGE : nothing to do"
     jq -c -n --arg node "$NODE" --argjson vm "$VMID" --argjson net "$NETID" \
-      --arg bridge "$BRIDGE" --arg model "$MODEL" \
+      --arg bridge "$BRIDGE" --arg model "$MODEL" --arg mac "$OLD_MAC" \
       '{action:"network_replace_interfaces_vm", source:"proxmox", proxmox_node:$node,
         vm_id:$vm, vm_vmnet_id:$net, iface_bridge:$bridge, iface_model:$model,
-        verdict:"skipped", detail:"already on that bridge"}'
+        iface_macaddr:$mac,
+        verdict:"skipped", detail:"already on that bridge, nothing destroyed"}'
     continue
   fi
 
-  _trace "replace : vm=$VMID net$NETID  $OLD_BRIDGE -> $BRIDGE  model=$MODEL firewall=${OLD_FW:-unset}"
+  _trace "replace : vm=$VMID net$NETID  $OLD_BRIDGE -> $BRIDGE  model=$MODEL mac=$OLD_MAC firewall=${OLD_FW:-unset}"
 
   #### #### ####
   #
@@ -148,13 +168,17 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
   ## 1, and the add recreates net1 - ON TOP OF THE net1 THAT IS STILL THERE. A move of one
   ## card would silently destroy another. Asking for the id we just deleted is the whole
   ## point of a replace, and it costs one key.
+  ##
+  ## iface_macaddr goes to BOTH branches : it is what makes this a replace rather than a
+  ## new card. The branch itself is only about the firewall flag, which must be resent when
+  ## the card had one and left out when it had none.
   if [ -n "$OLD_FW" ]; then
-    printf '{"proxmox_node":"%s","vm_id":%s,"vm_vmnet_id":%s,"iface_model":"%s","iface_bridge":"%s","iface_firewall":"%s"}\n' \
-      "$NODE" "$VMID" "$NETID" "$MODEL" "$BRIDGE" "$OLD_FW" \
+    printf '{"proxmox_node":"%s","vm_id":%s,"vm_vmnet_id":%s,"iface_model":"%s","iface_bridge":"%s","iface_macaddr":"%s","iface_firewall":"%s"}\n' \
+      "$NODE" "$VMID" "$NETID" "$MODEL" "$BRIDGE" "$OLD_MAC" "$OLD_FW" \
       | proxmox_network.vm_id.add_interfaces_vm.to.jsons.sh --json
   else
-    printf '{"proxmox_node":"%s","vm_id":%s,"vm_vmnet_id":%s,"iface_model":"%s","iface_bridge":"%s"}\n' \
-      "$NODE" "$VMID" "$NETID" "$MODEL" "$BRIDGE" \
+    printf '{"proxmox_node":"%s","vm_id":%s,"vm_vmnet_id":%s,"iface_model":"%s","iface_bridge":"%s","iface_macaddr":"%s"}\n' \
+      "$NODE" "$VMID" "$NETID" "$MODEL" "$BRIDGE" "$OLD_MAC" \
       | proxmox_network.vm_id.add_interfaces_vm.to.jsons.sh --json
   fi
 
@@ -165,10 +189,12 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
   #
   jq -c -n --arg node "$NODE" --argjson vm "$VMID" --argjson net "$NETID" \
     --arg from "$OLD_BRIDGE" --arg bridge "$BRIDGE" --arg model "$MODEL" --arg fw "${OLD_FW:-}" \
+    --arg mac "$OLD_MAC" \
     '{action:"network_replace_interfaces_vm", source:"proxmox", proxmox_node:$node,
       vm_id:$vm, vm_vmnet_id:$net,
       iface_bridge_from:$from, iface_bridge:$bridge, iface_model:$model,
+      iface_macaddr:$mac,
       iface_firewall:(if $fw == "" then null else $fw end),
-      verdict:"ok", detail:"card recreated, MAC changed"}'
+      verdict:"ok", detail:"card recreated, MAC preserved"}'
 
 done

@@ -348,12 +348,16 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "iface_model" "$line" ".iface_model"
       assign_if_not_empty "iface_bridge" "$line" ".iface_bridge"
 
-      ## Consommees par add_network_vm, qui les garde derriere un "is defined". Sans
-      ## declaration ici la cle est lue puis jetee, l'action retombe sur le defaut de
-      ## Proxmox, et l'appelant n'a aucune erreur : le parametre est simplement
-      ## inatteignable. Six autres du meme groupe restent a ouvrir (macaddr, tag,
-      ## queues, rate, trunks, model_mac).
+      ## Consumed by add_network_vm behind an "is defined". Undeclared here, the key is read
+      ## then dropped and the caller gets no error : the parameter is simply unreachable.
+      ## Five of this group stay closed (tag, queues, rate, trunks, model_mac).
+      ##
+      ## iface_macaddr is open because its absence CUTS guests, measured : changing a card
+      ## attribute means delete then add, and without it the add cannot resend the MAC.
+      ## Proxmox draws a new one, the netplan match on macaddress fails, and the guest loses
+      ## its network with nothing showing on the Proxmox side.
       assign_if_not_empty "iface_firewall" "$line" ".iface_firewall"
+      assign_if_not_empty "iface_macaddr" "$line" ".iface_macaddr"
       assign_if_not_empty "iface_link_down" "$line" ".iface_link_down"
       assign_if_not_empty "vm_vmnet_id" "$line" ".vm_vmnet_id"
 
