@@ -137,7 +137,9 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
       devkit_utils.text.echo_error.to.text.to.stderr.sh \
         "stopped without printing anything (rc=${_dk_rc}). TWO causes are possible and they are NOT the same : the guard refused BEFORE touching anything, or the change went through and a later step failed."
       devkit_utils.text.echo_error.to.text.to.stderr.sh \
-        "read the switch to tell them apart : proxmox_firewall.vm_id.list_options.to.jsons.sh . A vm_fw_opt_enable of 0 means nothing was changed. A 1 means the firewall IS armed despite this error, and only the reporting failed. Then run the same command with --text to see which step stopped the play."
+        "read THE CARD to tell them apart, not the guest switch : proxmox_network.vm_id.list_interfaces_vm.to.jsons.sh . On the card you named, a vm_network_firewall of 1 means nothing was changed. A 0 means the flag IS cleared despite this error, and only the reporting failed. Then run the same command with --text to see which step stopped the play."
+      devkit_utils.text.echo_error.to.text.to.stderr.sh \
+        "do NOT read the guest switch here. This action never touches it, so its value says nothing about this call : it can read 1 for reasons entirely unrelated to the card flag."
       exit "$_dk_rc"
     fi
 
