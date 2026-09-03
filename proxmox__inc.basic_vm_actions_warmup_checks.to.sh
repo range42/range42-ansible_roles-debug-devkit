@@ -85,6 +85,8 @@ ALLOWED_ACTIONS=(
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   firewall_vm_enable
   firewall_vm_disable
+  firewall_vm_iface_enable
+  firewall_vm_iface_disable
   #
   firewall_vm_apply_iptables_rule
   firewall_vm_delete_iptables_rule
