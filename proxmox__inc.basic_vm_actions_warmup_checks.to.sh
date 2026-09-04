@@ -97,6 +97,7 @@ ALLOWED_ACTIONS=(
   firewall_vm_list_iptables_alias
   #
   firewall_vm_enable_default_ssh_rules
+  firewall_vm_declare_iptables_port
   #
   firewall_node_enable
   firewall_node_disable
