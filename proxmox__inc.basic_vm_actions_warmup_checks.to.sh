@@ -119,6 +119,10 @@ ALLOWED_ACTIONS=(
   firewall_dc_list_options
   firewall_node_list_options
   firewall_vm_list_options
+  # LECTURE du journal du pare-feu, aux deux niveaux qui en portent un - le datacenter
+  # n'en a pas. L'endpoint invite existe bien que `pvesh ls` ne le liste pas (mesure).
+  firewall_node_list_log
+  firewall_vm_list_log
   # alias du DATACENTER : un alias est un objet cluster-wide et par invite, l'api n'en
   # expose aucun au niveau d'un noeud. Un alias datacenter est deja visible des regles
   # de chaque noeud, donc il n'y a rien qu'un alias de noeud pourrait cadrer.
