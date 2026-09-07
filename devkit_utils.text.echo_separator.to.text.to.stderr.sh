@@ -14,7 +14,7 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - echo separator lien :: YELLOW "
+  echo "  $(basename "$0") - echo separator line :: YELLOW "
   echo
   echo OPTIONS
   echo

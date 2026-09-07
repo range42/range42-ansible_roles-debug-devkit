@@ -52,7 +52,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - Enable node firewall - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - List iptables rules - datacenter firewall - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo

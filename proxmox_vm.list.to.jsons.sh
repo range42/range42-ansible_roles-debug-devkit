@@ -135,7 +135,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r NODE_JSON; do
 
       printf '%s\n' "$NODE_JSON" |
         proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-        jq '.[]' |
+        jq -c '.[]' |
         devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta" |
         devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER"
 
@@ -143,7 +143,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r NODE_JSON; do
 
       printf '%s\n' "$NODE_JSON" |
         proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-        jq '.[]' |
+        jq -c '.[]' |
         devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta"
 
     fi

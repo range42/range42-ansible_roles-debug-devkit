@@ -15,7 +15,7 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - echo std WARNING message - text-color :: YELLOW "
+  echo "  $(basename "$0") - echo std TRACE message - text-color :: YELLOW "
   echo
   echo OPTIONS
   echo

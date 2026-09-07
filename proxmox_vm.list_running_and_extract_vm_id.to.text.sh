@@ -23,7 +23,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - list VM status - Execute the specified $ACTION action via Ansible - return vm_id as TEXT"
+  echo "  $(basename "$0") - list RUNNING vms and extract vm_id - Execute the specified $ACTION action via Ansible - return vm_id as TEXT"
   echo
   echo OPTIONS
   echo

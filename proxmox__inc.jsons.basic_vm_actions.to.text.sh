@@ -207,6 +207,19 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "vm_fw_pos" "$line" ".vm_fw_pos"
       assign_if_not_empty "vm_fw_log" "$line" ".vm_fw_log"
 
+      # fw - the log readers take four optional paging keys per level, and the ssh port of
+      # the reachability assert is a parameter : undeclared here, they were silently dropped
+      # between the wrapper and the playbook - the help advertised them, nothing arrived.
+      assign_if_not_empty "vm_fw_log_limit" "$line" ".vm_fw_log_limit"
+      assign_if_not_empty "vm_fw_log_start" "$line" ".vm_fw_log_start"
+      assign_if_not_empty "vm_fw_log_since" "$line" ".vm_fw_log_since"
+      assign_if_not_empty "vm_fw_log_until" "$line" ".vm_fw_log_until"
+      assign_if_not_empty "node_fw_log_limit" "$line" ".node_fw_log_limit"
+      assign_if_not_empty "node_fw_log_start" "$line" ".node_fw_log_start"
+      assign_if_not_empty "node_fw_log_since" "$line" ".node_fw_log_since"
+      assign_if_not_empty "node_fw_log_until" "$line" ".node_fw_log_until"
+      assign_if_not_empty "vm_fw_ssh_port" "$line" ".vm_fw_ssh_port"
+
       # fw - vm level - default ssh rules
       #
       # The action has a default for each of these four, so an undeclared key does not

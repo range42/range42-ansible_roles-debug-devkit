@@ -117,7 +117,8 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
   if [[ "$OUTPUT_JSON" == true ]]; then
 
     printf '%s\n' "$CURRENT_JSON_LINE" |
-      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+      jq -c ".[]"
 
   else
 

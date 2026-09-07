@@ -158,7 +158,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r NODE_JSON; do
 
       printf '%s\n' "$NODE_JSON" |
         proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-        jq ".[]"
+        jq -c ".[]"
 
     fi
 
