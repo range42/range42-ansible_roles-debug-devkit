@@ -25,7 +25,6 @@ ALLOWED_ACTIONS=(
   vm_get_config_cdrom
   vm_get_config_ram
   vm_get_config_cpu
-  vm_get_usage
   vm_set_tag
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   lxc_create

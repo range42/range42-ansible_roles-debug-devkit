@@ -33,8 +33,10 @@ fi
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 EXTRA_VAR=""
-DEBUG=true
-# DEBUG=false
+# the DEBUG block writes /tmp/debug on EVERY invocation - fixed path, clobbered by any
+# concurrent run. Turn it on by hand, for the time of a diagnostic, never by default.
+DEBUG=false
+# DEBUG=true
 
 inject_yaml_var() {
   local KEY="$1"
@@ -81,8 +83,8 @@ DEFAULT_OPEN_VAULT_PW_FILE_PATH="${RANGE42_VAULT_PASSWORD_FILE:-/tmp/vault/vault
 # CURRENT_ANSIBLE_CONFIG="./ansible_no_skipped_json.cfg"
 CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible_no_skipped_json.cfg"
 
-ARG_ACTION="${1:-}"
 # ARG_NODE_NAME="${2:-}"
+ARG_ACTION="${1:-}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -161,7 +163,6 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "lxc_bridge" "$line" ".lxc_bridge"
       assign_if_not_empty "lxc_cores" "$line" ".lxc_cores"
 
-      assign_if_not_empty "lxc_disk_size" "$line" ".vm_lxc_disk_sizecpu"
       assign_if_not_empty "lxc_dns_primary" "$line" ".lxc_dns_primary"
       assign_if_not_empty "lxc_dns_secondary" "$line" ".lxc_dns_secondary"
       assign_if_not_empty "lxc_gateway" "$line" ".lxc_gateway"

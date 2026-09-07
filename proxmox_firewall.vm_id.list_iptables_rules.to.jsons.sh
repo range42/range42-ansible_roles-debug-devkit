@@ -7,7 +7,7 @@
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 set -euo pipefail
-  ACTION="firewall_vm_list_iptables_rule"
+ACTION="firewall_vm_list_iptables_rule"
 DEFAULT_OUTPUT_JSON=true
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
