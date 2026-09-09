@@ -72,6 +72,9 @@ fi
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # auto-delegate to the direct API fast path when reachable
 # override with RANGE42_PROXMOX_API_FORCE=off to keep the ansible slow path
+# the context guard runs first : both paths read the vault through the same link
+
+proxmox__inc.warmup_checks.sh
 
 if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
   if proxmox__inc.api_reachable.sh ; then
@@ -81,10 +84,6 @@ if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
     devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API not reachable - using ansible slow path"
   fi
 fi
-
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-
-proxmox__inc.warmup_checks.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #

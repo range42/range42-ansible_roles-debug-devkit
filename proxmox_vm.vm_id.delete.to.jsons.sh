@@ -67,6 +67,9 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
 fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+# the context guard runs first : both paths read the vault through the same link
+
+proxmox__inc.warmup_checks.sh
 
 if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
   if proxmox__inc.api_reachable.sh ; then
@@ -79,7 +82,6 @@ fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-proxmox__inc.warmup_checks.sh
 proxmox__inc.warmup_checks_stdin.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
