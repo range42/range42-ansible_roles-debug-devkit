@@ -4,8 +4,14 @@
 #
 # proxmox__inc.show_firewall.request.sh
 #
-# Shared by the show_firewall engine and its _with_api twin : reads the options and the
-# input ONCE, validates them, and prints one json line describing the request :
+# SHARED BY THE WHOLE show_* FAMILY, not only by the view its name comes from : it knows nothing
+# about the firewall, it reads a scope, an output and a set of guest ids. show_firewall and its
+# twin were the first callers, show_firewall_rules and its twin are the next ; the name is kept as
+# it is so the two commits that use it stay small, and this paragraph is the warning that the name
+# says less than the file does.
+#
+# Reads the options and the input ONCE, validates them, and prints one json line describing the
+# request :
 #
 #   {"scope":"vm_ids","output":"table","ids":[2001,2002],"stdin_nodes":[]}
 #
