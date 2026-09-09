@@ -40,15 +40,18 @@ json | text | table) ;;
   ;;
 esac
 
-LINES=$(cat)
+# NOT "LINES" : bash and zsh own that name (the terminal height) and bash rewrites it after every
+# external command when a terminal is attached, so the second pipeline below would receive a number.
+# Invisible in piped tests, seen live on a deployer.
+VIEW_JSON=$(cat)
 
 if [[ "$MODE" == "json" ]]; then
-  [ -n "$LINES" ] && printf '%s\n' "$LINES"
+  [ -n "$VIEW_JSON" ] && printf '%s\n' "$VIEW_JSON"
   exit 0
 fi
 
 if [[ "$MODE" == "text" ]]; then
-  [ -n "$LINES" ] && printf '%s\n' "$LINES" | jq -r '
+  [ -n "$VIEW_JSON" ] && printf '%s\n' "$VIEW_JSON" | jq -r '
     if .level == "host" then
       "node \(.proxmox_node) : datacenter switch \(.datacenter_enable // "-"), node switch \(.node_enable // "-")"
     elif .level == "card" then
@@ -70,17 +73,17 @@ fi
 #
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-[ -n "$LINES" ] || exit 0
+[ -n "$VIEW_JSON" ] || exit 0
 
-printf '%s\n' "$LINES" | jq -r 'select(.level == "host")
+printf '%s\n' "$VIEW_JSON" | jq -r 'select(.level == "host")
   | "  node \(.proxmox_node) : datacenter switch \(.datacenter_enable // "-"), node switch \(.node_enable // "-")\n"'
 
-printf '%s\n' "$LINES" | jq -c 'select(.level == "card")' |
+printf '%s\n' "$VIEW_JSON" | jq -c 'select(.level == "card")' |
   devkit_utils.jsons.render.to.table.sh vm_id:VM_ID vm_name:VM_NAME guest_enable:GUEST vm_network_device:CARD vm_network_bridge:BRIDGE card_firewall_flag:FLAG effectively_filtered:FILTERED
 
-NO_CARD=$(printf '%s\n' "$LINES" | jq -r 'select(.level == "guest") | .vm_id' | paste -sd ' ' -)
-ABSENT=$(printf '%s\n' "$LINES" | jq -r 'select(.level == "absent") | .vm_id' | paste -sd ' ' -)
-ERRORS=$(printf '%s\n' "$LINES" | jq -r 'select(.level == "error") | "  unreadable : vm \(.vm_id) (\(.reason))"')
+NO_CARD=$(printf '%s\n' "$VIEW_JSON" | jq -r 'select(.level == "guest") | .vm_id' | paste -sd ' ' -)
+ABSENT=$(printf '%s\n' "$VIEW_JSON" | jq -r 'select(.level == "absent") | .vm_id' | paste -sd ' ' -)
+ERRORS=$(printf '%s\n' "$VIEW_JSON" | jq -r 'select(.level == "error") | "  unreadable : vm \(.vm_id) (\(.reason))"')
 
 [ -z "$NO_CARD" ] || printf '\n  no network card : %s\n' "$NO_CARD"
 [ -z "$ABSENT" ] || printf '\n  not on this node : %s\n' "$ABSENT"
