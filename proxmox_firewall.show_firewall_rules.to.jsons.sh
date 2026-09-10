@@ -289,8 +289,10 @@ GUESTS_LABEL=$(printf '%s' "$REQ" | jq -r --arg node "$NODE" '
     (.ids[0] | tostring)
   elif .scope == "vm_ids" then
     ((.ids | length | tostring) + " ids on stdin")
-  else
+  elif .scope == "node" then
     ("node " + $node + " : every guest")
+  else
+    "datacenter : every guest"
   end')
 
 proxmox__inc.show_firewall_rules.render.sh "$OUTPUT" "$GUESTS_LABEL" < "$TMP_DIR/lines"
