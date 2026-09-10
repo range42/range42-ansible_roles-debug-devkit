@@ -181,7 +181,17 @@ NODE=$(printf '%s\n%s\n' "$DC_RAW" "$ND_RAW" | jq -r 'select(.proxmox_node != nu
 
 GUESTS_RAW=$(_read proxmox_vm.list.to.jsons.sh '{}') || {
   devkit_utils.text.echo_error.to.text.to.stderr.sh " cannot list the guests of the node : nothing to report on" ; exit 1 ; }
-GUESTS=$(printf '%s\n' "$GUESTS_RAW" | jq -s -c '[.[] | select(.vm_id != null) | {vm_id: (.vm_id | tonumber), vm_name: (.vm_name // "?"), vm_status: (.vm_status // "?"), vm_template: ((.vm_template // 0) | tostring | tonumber)}] | sort_by(.vm_id)')
+GUESTS=$(printf '%s\n' "$GUESTS_RAW" | jq -s -c '
+  [ .[]
+    | select(.vm_id != null)
+    | {
+        vm_id: (.vm_id | tonumber),
+        vm_name: (.vm_name // "?"),
+        vm_status: (.vm_status // "?"),
+        vm_template: ((.vm_template // 0) | tostring | tonumber)
+      }
+  ]
+  | sort_by(.vm_id)')
 [[ -n "$NODE" ]] || NODE=$(printf '%s\n' "$GUESTS_RAW" | jq -r 'select(.proxmox_node != null) | .proxmox_node' | head -1)
 [[ "$(printf '%s' "$GUESTS" | jq 'length')" -gt 0 ]] || { devkit_utils.text.echo_error.to.text.to.stderr.sh " cannot list the guests of the node : nothing to report on" ; exit 1 ; }
 
@@ -193,7 +203,14 @@ done < <(printf '%s' "$REQ" | jq -r '.stdin_nodes[]?')
 ## the readers already publish the twelve prefixed fields : only level and action are rewritten
 _relevel() { # $1 = level
   jq -c --arg level "$1" --arg action "$ACTION" --arg src "$SOURCE_TAG" \
-    'select(type == "object") | {level: $level} + . + {action: $action, source: $src}'
+    '
+      select(type == "object")
+      | { level: $level }
+      + .
+      + {
+          action: $action,
+          source: $src
+        }'
 }
 
 [ -n "${DC_RAW//[[:space:]]/}" ] && printf '%s\n' "$DC_RAW" | _relevel dc_rule >> "$TMP_DIR/lines"
@@ -206,7 +223,14 @@ while IFS= read -r ID; do
   ENTRY=$(printf '%s' "$GUESTS" | jq -c --argjson id "$ID" 'first(.[] | select(.vm_id == $id)) // empty')
   if [[ -z "$ENTRY" ]]; then
     jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" \
-      '{level: "absent", action: $action, source: $src, proxmox_node: $node, vm_id: $id}' >> "$TMP_DIR/lines"
+      '
+      {
+        level: "absent",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id
+      }' >> "$TMP_DIR/lines"
     continue
   fi
   set +e
@@ -215,19 +239,45 @@ while IFS= read -r ID; do
   set -e
   if [[ "$rc" -ne 0 ]]; then
     jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" --arg reason "the per-vm reader failed (rc ${rc})" \
-      '{level: "error", action: $action, source: $src, proxmox_node: $node, vm_id: $id, reason: $reason}' >> "$TMP_DIR/lines"
+      '
+      {
+        level: "error",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id,
+        reason: $reason
+      }' >> "$TMP_DIR/lines"
     continue
   fi
   if [[ -z "${VM_RAW//[[:space:]]/}" ]]; then
     printf '%s' "$ENTRY" | jq -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" \
-      '{level: "guest", action: $action, source: $src, proxmox_node: $node} + . + {rules: 0}' >> "$TMP_DIR/lines"
+      '
+      { level: "guest",
+        action: $action,
+        source: $src,
+        proxmox_node: $node
+      }
+      + .
+      + { rules: 0 }' >> "$TMP_DIR/lines"
     continue
   fi
   # vm_id is taken back from $e, NOT from the reader : the reader echoes the id as it received it, a
   # string, while the api twin publishes the number of the guest list. The contract is the same
   # fields AND the same types on both paths, so the numeric id of the guest list wins here too.
   printf '%s\n' "$VM_RAW" | jq -c --arg level guest_rule --arg action "$ACTION" --arg src "$SOURCE_TAG" --argjson e "$ENTRY" \
-    'select(type == "object") | {level: $level} + . + {action: $action, source: $src, vm_id: $e.vm_id, vm_name: $e.vm_name, vm_status: $e.vm_status, vm_template: $e.vm_template}' >> "$TMP_DIR/lines"
+    '
+      select(type == "object")
+      | { level: $level }
+      + .
+      + {
+          action: $action,
+          source: $src,
+          vm_id: $e.vm_id,
+          vm_name: $e.vm_name,
+          vm_status: $e.vm_status,
+          vm_template: $e.vm_template
+        }' >> "$TMP_DIR/lines"
 done < <(printf '%s' "$IDS" | jq -r '.[]')
 
 proxmox__inc.show_firewall_rules.render.sh "$OUTPUT" < "$TMP_DIR/lines"

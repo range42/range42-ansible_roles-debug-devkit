@@ -165,7 +165,17 @@ DC_ENABLE=$(printf '%s' "$DC_JSON" | jq -c '.dc_fw_opt_enable // null')
 ND_ENABLE=$(printf '%s' "$ND_JSON" | jq -c '.node_fw_opt_enable // null')
 
 GUESTS=$( { printf '{}\n' | proxmox_vm.list.to.jsons.sh --json 2>/dev/null || true ; } | _json_only | _lines \
-  | jq -s -c '[.[] | select(.vm_id != null) | {vm_id: (.vm_id | tonumber), vm_name: (.vm_name // "?"), vm_status: (.vm_status // "?"), vm_template: ((.vm_template // 0) | tostring | tonumber)}] | sort_by(.vm_id)')
+  | jq -s -c '
+      [ .[]
+        | select(.vm_id != null)
+        | {
+            vm_id: (.vm_id | tonumber),
+            vm_name: (.vm_name // "?"),
+            vm_status: (.vm_status // "?"),
+            vm_template: ((.vm_template // 0) | tostring | tonumber)
+          }
+      ]
+      | sort_by(.vm_id)')
 [[ "$(printf '%s' "$GUESTS" | jq 'length')" -gt 0 ]] || { devkit_utils.text.echo_error.to.text.to.stderr.sh " cannot list the guests of node ${NODE} : nothing to report on" ; exit 1 ; }
 
 # a proxmox_node given on stdin is ignored : the node comes from the vault (one node per workspace)
@@ -182,14 +192,29 @@ emit() { printf '%s\n' "$1" >> "$TMP_DIR/lines" ; }
 : > "$TMP_DIR/lines"
 
 emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson dc "$DC_ENABLE" --argjson nd "$ND_ENABLE" \
-  "$JQ_DEFS"'{level: "host", action: $action, source: $src, proxmox_node: $node, datacenter_enable: ($dc | sw), node_enable: ($nd | sw)}')"
+  "$JQ_DEFS"'
+    {
+      level: "host",
+      action: $action,
+      source: $src,
+      proxmox_node: $node,
+      datacenter_enable: ($dc | sw),
+      node_enable: ($nd | sw)
+    }')"
 
 while IFS= read -r ID; do
   [[ -n "$ID" ]] || continue
   ENTRY=$(printf '%s' "$GUESTS" | jq -c --argjson id "$ID" 'first(.[] | select(.vm_id == $id)) // empty')
   if [[ -z "$ENTRY" ]]; then
     emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" \
-      '{level: "absent", action: $action, source: $src, proxmox_node: $node, vm_id: $id}')"
+      '
+      {
+        level: "absent",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id
+      }')"
     continue
   fi
 
@@ -201,32 +226,68 @@ while IFS= read -r ID; do
   CARDS=$(_json_only < "$TMP_DIR/cards.raw" | _lines)
   if [[ "$RC" -ne 0 ]]; then
     emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" --arg reason "the per-vm reader failed (rc ${RC})" \
-      '{level: "error", action: $action, source: $src, proxmox_node: $node, vm_id: $id, reason: $reason}')"
+      '
+      {
+        level: "error",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id,
+        reason: $reason
+      }')"
     continue
   fi
 
   if [[ -z "${CARDS//[[:space:]]/}" ]]; then
     G_ENABLE=$(printf '{"vm_id":%s}\n' "$ID" | proxmox_firewall.vm_id.list_options.to.jsons.sh --json 2>/dev/null | _last_object | jq -c '.vm_fw_opt_enable // null')
     emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson entry "$ENTRY" --argjson dc "$DC_ENABLE" --argjson nd "$ND_ENABLE" --argjson g "$G_ENABLE" \
-      "$JQ_DEFS"'{level: "guest", action: $action, source: $src, proxmox_node: $node,
-        vm_id: $entry.vm_id, vm_name: $entry.vm_name, vm_status: $entry.vm_status, vm_template: $entry.vm_template,
-        datacenter_enable: ($dc | sw), node_enable: ($nd | sw), guest_enable: ($g | sw),
-        cards: 0, effectively_filtered: false, missing: ["no network card"]}')"
+      "$JQ_DEFS"'
+      {
+        level: "guest",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $entry.vm_id,
+        vm_name: $entry.vm_name,
+        vm_status: $entry.vm_status,
+        vm_template: $entry.vm_template,
+        datacenter_enable: ($dc | sw),
+        node_enable: ($nd | sw),
+        guest_enable: ($g | sw),
+        cards: 0,
+        effectively_filtered: false,
+        missing: ["no network card"]
+      }')"
     continue
   fi
 
   printf '%s\n' "$CARDS" | jq -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson entry "$ENTRY" \
     "$JQ_DEFS"'
-    (.datacenter_enable | sw) as $d | (.node_enable | sw) as $n | (.guest_enable | sw) as $ge | (.card_firewall_flag | sw) as $f |
-    {level: "card", action: $action, source: $src, proxmox_node: $node,
-     vm_id: $entry.vm_id, vm_name: $entry.vm_name, vm_status: $entry.vm_status, vm_template: $entry.vm_template,
-     vm_network_device: .vm_network_device, vm_network_bridge: (.vm_network_bridge // null),
-     datacenter_enable: $d, node_enable: $n, guest_enable: $ge, card_firewall_flag: $f,
-     node_enable_is_informational: true,
-     effectively_filtered: (($d | on) and ($ge | on) and ($f | on)),
-     missing: ((if ($d | on) then [] else ["datacenter_enable"] end)
-             + (if ($ge | on) then [] else ["guest_enable"] end)
-             + (if ($f | on) then [] else ["card_firewall_flag"] end))}' >> "$TMP_DIR/lines"
+    (.datacenter_enable  | sw) as $d
+    | (.node_enable        | sw) as $n
+    | (.guest_enable       | sw) as $ge
+    | (.card_firewall_flag | sw) as $f
+    | {
+        level: "card",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $entry.vm_id,
+        vm_name: $entry.vm_name,
+        vm_status: $entry.vm_status,
+        vm_template: $entry.vm_template,
+        vm_network_device: .vm_network_device,
+        vm_network_bridge: (.vm_network_bridge // null),
+        datacenter_enable: $d,
+        node_enable: $n,
+        guest_enable: $ge,
+        card_firewall_flag: $f,
+        node_enable_is_informational: true,
+        effectively_filtered: (($d | on) and ($ge | on) and ($f | on)),
+        missing: ((if ($d  | on) then [] else ["datacenter_enable"]  end)
+                + (if ($ge | on) then [] else ["guest_enable"]       end)
+                + (if ($f  | on) then [] else ["card_firewall_flag"] end))
+      }' >> "$TMP_DIR/lines"
 done < <(printf '%s' "$IDS" | jq -r '.[]')
 
 proxmox__inc.show_firewall.render.sh "$OUTPUT" < "$TMP_DIR/lines"

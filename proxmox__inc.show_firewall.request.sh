@@ -124,7 +124,9 @@ _read_stdin_ids() {
   local bad
   bad=$(printf '%s\n' "$parsed" | jq -r -s 'map(select(.bad_line != null)) | .[0].bad_line // empty')
   [[ -z "$bad" ]] || _fail "cannot read a vm_id from this line : ${bad}"
-  IDS_JSON=$(printf '%s\n' "$parsed" | jq -s -c '[.[].vm_id] | reduce .[] as $x ([]; if index($x) == null then . + [$x] else . end)')
+  IDS_JSON=$(printf '%s\n' "$parsed" | jq -s -c '
+    [ .[].vm_id ]
+    | reduce .[] as $x ([]; if index($x) == null then . + [$x] else . end)')
   STDIN_NODES_JSON=$(printf '%s\n' "$parsed" | jq -s -c '[.[].proxmox_node | select(. != null)] | unique')
 }
 
@@ -150,7 +152,9 @@ scenario)
   [[ -n "${RANGE42_ACTIVE_CONFIG_DIR:-}" ]] || _fail "no active workspace in this shell (RANGE42_ACTIVE_CONFIG_DIR is empty) - run : range42-context use <codename> <scenario>"
   MANIFEST="${RANGE42_ACTIVE_CONFIG_DIR%/}/scenario/manifest/scenario_vms.json"
   [[ -f "$MANIFEST" ]] || _fail "the active scenario has no manifest : ${MANIFEST}"
-  IDS_JSON=$(jq -c '[.vms[].vm_id | tonumber] | reduce .[] as $x ([]; if index($x) == null then . + [$x] else . end)' "$MANIFEST" 2>/dev/null) || _fail "cannot read the vm ids of the manifest : ${MANIFEST}"
+  IDS_JSON=$(jq -c '
+    [ .vms[].vm_id | tonumber ]
+    | reduce .[] as $x ([]; if index($x) == null then . + [$x] else . end)' "$MANIFEST" 2>/dev/null) || _fail "cannot read the vm ids of the manifest : ${MANIFEST}"
   [[ "$(printf '%s' "$IDS_JSON" | jq 'length')" -gt 0 ]] || _fail "the manifest declares no vm : ${MANIFEST}"
   ;;
 node | dc | all)
@@ -159,4 +163,10 @@ node | dc | all)
 esac
 
 jq -n -c --arg scope "$SCOPE" --arg output "$OUTPUT" --argjson ids "$IDS_JSON" --argjson nodes "$STDIN_NODES_JSON" \
-  '{scope: $scope, output: $output, ids: $ids, stdin_nodes: $nodes}'
+  '
+  {
+    scope: $scope,
+    output: $output,
+    ids: $ids,
+    stdin_nodes: $nodes
+  }'

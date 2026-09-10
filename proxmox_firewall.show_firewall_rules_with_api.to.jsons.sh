@@ -114,13 +114,27 @@ _get() {
 # prefixed per level, an absent one omitted as the ansible path omits it
 _emit_rules() {
   printf '%s' "$BODY" | jq -c --arg level "$1" --arg p "$2" --argjson extra "$3" '
-    .data[]? as $r |
-    ({ pos: $r.pos, action: $r.action, type: $r.type, iface: $r.iface, source: $r.source,
-       dest: $r.dest, proto: $r.proto, dport: $r.dport, sport: $r.sport, enable: $r.enable,
-       comment: $r.comment, log: $r.log }
-     | with_entries(select(.value != null))
-     | with_entries(.key |= $p + .)) as $fields |
-    { level: $level } + $extra + $fields'
+    .data[]? as $r
+    | ( {
+          pos:     $r.pos,
+          action:  $r.action,
+          type:    $r.type,
+          iface:   $r.iface,
+          source:  $r.source,
+          dest:    $r.dest,
+          proto:   $r.proto,
+          dport:   $r.dport,
+          sport:   $r.sport,
+          enable:  $r.enable,
+          comment: $r.comment,
+          log:     $r.log
+        }
+        | with_entries(select(.value != null))
+        | with_entries(.key |= $p + .)
+      ) as $fields
+    | { level: $level }
+    + $extra
+    + $fields'
 }
 
 : > "$TMP_DIR/lines"
@@ -130,7 +144,12 @@ _emit_rules() {
 # there is nothing to report on, so these reads are the ones that end the run.
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-EXTRA_HOST=$(jq -n -c --arg a "$ACTION" --arg s "$SOURCE_TAG" --arg n "$NODE" '{action: $a, source: $s, proxmox_node: $n}')
+EXTRA_HOST=$(jq -n -c --arg a "$ACTION" --arg s "$SOURCE_TAG" --arg n "$NODE" '
+  {
+    action: $a,
+    source: $s,
+    proxmox_node: $n
+  }')
 
 _get "${BASE_URL}/cluster/firewall/rules"
 [[ "$HTTP_CODE" == "200" ]] || { devkit_utils.text.echo_error.to.text.to.stderr.sh " cannot read the datacenter firewall rules (http ${HTTP_CODE}) : nothing to report on" ; exit 1 ; }
@@ -142,7 +161,16 @@ _emit_rules node_rule "node_fw_" "$EXTRA_HOST" >> "$TMP_DIR/lines"
 
 _get "${BASE_URL}/nodes/${NODE}/qemu"
 [[ "$HTTP_CODE" == "200" ]] || { devkit_utils.text.echo_error.to.text.to.stderr.sh " cannot list the guests of node ${NODE} (http ${HTTP_CODE}) : nothing to report on" ; exit 1 ; }
-GUESTS=$(printf '%s' "$BODY" | jq -c '[.data[] | {vm_id: .vmid, vm_name: (.name // "?"), vm_status: (.status // "?"), vm_template: (.template // 0)}] | sort_by(.vm_id)')
+GUESTS=$(printf '%s' "$BODY" | jq -c '
+  [ .data[]
+    | {
+        vm_id: .vmid,
+        vm_name: (.name // "?"),
+        vm_status: (.status // "?"),
+        vm_template: (.template // 0)
+      }
+  ]
+  | sort_by(.vm_id)')
 
 IDS=$(printf '%s' "$REQ" | jq -c --argjson guests "$GUESTS" 'if .ids == null then ($guests | map(.vm_id)) else .ids end')
 
@@ -155,23 +183,50 @@ while IFS= read -r ID; do
   ENTRY=$(printf '%s' "$GUESTS" | jq -c --argjson id "$ID" 'first(.[] | select(.vm_id == $id)) // empty')
   if [[ -z "$ENTRY" ]]; then
     jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" \
-      '{level: "absent", action: $action, source: $src, proxmox_node: $node, vm_id: $id}' >> "$TMP_DIR/lines"
+      '
+      {
+        level: "absent",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id
+      }' >> "$TMP_DIR/lines"
     continue
   fi
 
   _get "${BASE_URL}/nodes/${NODE}/qemu/${ID}/firewall/rules"
   if [[ "$HTTP_CODE" != "200" ]]; then
     jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" --arg reason "http ${HTTP_CODE} on firewall/rules" \
-      '{level: "error", action: $action, source: $src, proxmox_node: $node, vm_id: $id, reason: $reason}' >> "$TMP_DIR/lines"
+      '
+      {
+        level: "error",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id,
+        reason: $reason
+      }' >> "$TMP_DIR/lines"
     continue
   fi
 
   EXTRA_GUEST=$(jq -n -c --arg a "$ACTION" --arg s "$SOURCE_TAG" --arg n "$NODE" --argjson e "$ENTRY" \
-    '{action: $a, source: $s, proxmox_node: $n, vm_id: $e.vm_id, vm_name: $e.vm_name, vm_status: $e.vm_status, vm_template: $e.vm_template}')
+    '
+    {
+      action: $a,
+      source: $s,
+      proxmox_node: $n,
+      vm_id: $e.vm_id,
+      vm_name: $e.vm_name,
+      vm_status: $e.vm_status,
+      vm_template: $e.vm_template
+    }')
   BEFORE=$(wc -l < "$TMP_DIR/lines")
   _emit_rules guest_rule "vm_fw_" "$EXTRA_GUEST" >> "$TMP_DIR/lines"
   if [[ "$(wc -l < "$TMP_DIR/lines")" -eq "$BEFORE" ]]; then
-    printf '%s' "$EXTRA_GUEST" | jq -c '{level: "guest"} + . + {rules: 0}' >> "$TMP_DIR/lines"
+    printf '%s' "$EXTRA_GUEST" | jq -c '
+      { level: "guest" }
+      + .
+      + { rules: 0 }' >> "$TMP_DIR/lines"
   fi
 done < <(printf '%s' "$IDS" | jq -r '.[]')
 

@@ -121,9 +121,25 @@ fi
 # colon : a LAST segment made of digits, after a header, is the minimum width of the column
 COLS_JSON=$(printf '%s\n' "${SPECS[@]}" | jq -R -c '
   split(":") as $p
-  | if ($p | length) >= 3 and ($p[-1] | test("^[0-9]+$")) then { key: $p[0], header: ($p[1:-1] | join(":")), width: ($p[-1] | tonumber) }
-    elif ($p | length) >= 2 then { key: $p[0], header: ($p[1:] | join(":")), width: 0 }
-    else { key: ., header: ascii_upcase, width: 0 } end' | jq -s -c .)
+  | if ($p | length) >= 3 and ($p[-1] | test("^[0-9]+$")) then
+      {
+        key: $p[0],
+        header: ($p[1:-1] | join(":")),
+        width: ($p[-1] | tonumber)
+      }
+    elif ($p | length) >= 2 then
+      {
+        key: $p[0],
+        header: ($p[1:] | join(":")),
+        width: 0
+      }
+    else
+      {
+        key: .,
+        header: ascii_upcase,
+        width: 0
+      }
+    end' | jq -s -c .)
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #

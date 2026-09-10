@@ -137,7 +137,16 @@ ND_ENABLE=$(printf '%s' "$BODY" | jq -c '.data.enable // null')
 
 _get "${BASE_URL}/nodes/${NODE}/qemu"
 [[ "$HTTP_CODE" == "200" ]] || { devkit_utils.text.echo_error.to.text.to.stderr.sh " cannot list the guests of node ${NODE} (http ${HTTP_CODE}) : nothing to report on" ; exit 1 ; }
-GUESTS=$(printf '%s' "$BODY" | jq -c '[.data[] | {vm_id: .vmid, vm_name: (.name // "?"), vm_status: (.status // "?"), vm_template: (.template // 0)}] | sort_by(.vm_id)')
+GUESTS=$(printf '%s' "$BODY" | jq -c '
+  [ .data[]
+    | {
+        vm_id: .vmid,
+        vm_name: (.name // "?"),
+        vm_status: (.status // "?"),
+        vm_template: (.template // 0)
+      }
+  ]
+  | sort_by(.vm_id)')
 
 IDS=$(printf '%s' "$REQ" | jq -c --argjson guests "$GUESTS" 'if .ids == null then ($guests | map(.vm_id)) else .ids end')
 
@@ -152,21 +161,44 @@ emit() { printf '%s\n' "$1" >> "$TMP_DIR/lines" ; }
 : > "$TMP_DIR/lines"
 
 emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson dc "$DC_ENABLE" --argjson nd "$ND_ENABLE" \
-  "$JQ_DEFS"'{level: "host", action: $action, source: $src, proxmox_node: $node, datacenter_enable: ($dc | sw), node_enable: ($nd | sw)}')"
+  "$JQ_DEFS"'
+    {
+      level: "host",
+      action: $action,
+      source: $src,
+      proxmox_node: $node,
+      datacenter_enable: ($dc | sw),
+      node_enable: ($nd | sw)
+    }')"
 
 while IFS= read -r ID; do
   [[ -n "$ID" ]] || continue
   ENTRY=$(printf '%s' "$GUESTS" | jq -c --argjson id "$ID" 'first(.[] | select(.vm_id == $id)) // empty')
   if [[ -z "$ENTRY" ]]; then
     emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" \
-      '{level: "absent", action: $action, source: $src, proxmox_node: $node, vm_id: $id}')"
+      '
+      {
+        level: "absent",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id
+      }')"
     continue
   fi
 
   _get "${BASE_URL}/nodes/${NODE}/qemu/${ID}/firewall/options"
   if [[ "$HTTP_CODE" != "200" ]]; then
     emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" --arg reason "http ${HTTP_CODE} on firewall/options" \
-      '{level: "error", action: $action, source: $src, proxmox_node: $node, vm_id: $id, reason: $reason}')"
+      '
+      {
+        level: "error",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id,
+        reason: $reason
+      }')"
     continue
   fi
   G_ENABLE=$(printf '%s' "$BODY" | jq -c '.data.enable // null')
@@ -174,38 +206,85 @@ while IFS= read -r ID; do
   _get "${BASE_URL}/nodes/${NODE}/qemu/${ID}/config"
   if [[ "$HTTP_CODE" != "200" ]]; then
     emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson id "$ID" --arg reason "http ${HTTP_CODE} on config" \
-      '{level: "error", action: $action, source: $src, proxmox_node: $node, vm_id: $id, reason: $reason}')"
+      '
+      {
+        level: "error",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $id,
+        reason: $reason
+      }')"
     continue
   fi
 
   # the cards : netN = "type=MAC,bridge=X,firewall=1,..." parsed like the role does
   CARDS=$(printf '%s' "$BODY" | jq -c '
-    .data | to_entries | map(select(.key | test("^net[0-9]+$"))) | sort_by(.key | ltrimstr("net") | tonumber)
-    | .[] | (.value | split(",")) as $parts
-    | ($parts[1:] | map(select(test("=")) | split("=") | {(.[0]): (.[1:] | join("="))}) | add // {}) as $opts
-    | {device: .key, bridge: ($opts.bridge // null), firewall: ($opts.firewall // null)}')
+    .data
+    | to_entries
+    | map(select(.key | test("^net[0-9]+$")))
+    | sort_by(.key | ltrimstr("net") | tonumber)
+    | .[]
+    | (.value | split(",")) as $parts
+    | ( $parts[1:]
+        | map(select(test("=")) | split("=") | {(.[0]): (.[1:] | join("="))})
+        | add // {}
+      ) as $opts
+    | {
+        device: .key,
+        bridge: ($opts.bridge // null),
+        firewall: ($opts.firewall // null)
+      }')
 
   if [[ -z "$CARDS" ]]; then
     emit "$(jq -n -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson entry "$ENTRY" --argjson dc "$DC_ENABLE" --argjson nd "$ND_ENABLE" --argjson g "$G_ENABLE" \
-      "$JQ_DEFS"'{level: "guest", action: $action, source: $src, proxmox_node: $node,
-        vm_id: $entry.vm_id, vm_name: $entry.vm_name, vm_status: $entry.vm_status, vm_template: $entry.vm_template,
-        datacenter_enable: ($dc | sw), node_enable: ($nd | sw), guest_enable: ($g | sw),
-        cards: 0, effectively_filtered: false, missing: ["no network card"]}')"
+      "$JQ_DEFS"'
+      {
+        level: "guest",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $entry.vm_id,
+        vm_name: $entry.vm_name,
+        vm_status: $entry.vm_status,
+        vm_template: $entry.vm_template,
+        datacenter_enable: ($dc | sw),
+        node_enable: ($nd | sw),
+        guest_enable: ($g | sw),
+        cards: 0,
+        effectively_filtered: false,
+        missing: ["no network card"]
+      }')"
     continue
   fi
 
   printf '%s\n' "$CARDS" | jq -c --arg action "$ACTION" --arg src "$SOURCE_TAG" --arg node "$NODE" --argjson entry "$ENTRY" --argjson dc "$DC_ENABLE" --argjson nd "$ND_ENABLE" --argjson g "$G_ENABLE" \
     "$JQ_DEFS"'
-    ($dc | sw) as $d | ($nd | sw) as $n | ($g | sw) as $ge | (.firewall | sw) as $f |
-    {level: "card", action: $action, source: $src, proxmox_node: $node,
-     vm_id: $entry.vm_id, vm_name: $entry.vm_name, vm_status: $entry.vm_status, vm_template: $entry.vm_template,
-     vm_network_device: .device, vm_network_bridge: .bridge,
-     datacenter_enable: $d, node_enable: $n, guest_enable: $ge, card_firewall_flag: $f,
-     node_enable_is_informational: true,
-     effectively_filtered: (($d | on) and ($ge | on) and ($f | on)),
-     missing: ((if ($d | on) then [] else ["datacenter_enable"] end)
-             + (if ($ge | on) then [] else ["guest_enable"] end)
-             + (if ($f | on) then [] else ["card_firewall_flag"] end))}' >> "$TMP_DIR/lines"
+    ($dc | sw)       as $d
+    | ($nd | sw)      as $n
+    | ($g | sw)       as $ge
+    | (.firewall | sw) as $f
+    | {
+        level: "card",
+        action: $action,
+        source: $src,
+        proxmox_node: $node,
+        vm_id: $entry.vm_id,
+        vm_name: $entry.vm_name,
+        vm_status: $entry.vm_status,
+        vm_template: $entry.vm_template,
+        vm_network_device: .device,
+        vm_network_bridge: .bridge,
+        datacenter_enable: $d,
+        node_enable: $n,
+        guest_enable: $ge,
+        card_firewall_flag: $f,
+        node_enable_is_informational: true,
+        effectively_filtered: (($d | on) and ($ge | on) and ($f | on)),
+        missing: ((if ($d  | on) then [] else ["datacenter_enable"]  end)
+                + (if ($ge | on) then [] else ["guest_enable"]       end)
+                + (if ($f  | on) then [] else ["card_firewall_flag"] end))
+      }' >> "$TMP_DIR/lines"
 done < <(printf '%s' "$IDS" | jq -r '.[]')
 
 proxmox__inc.show_firewall.render.sh "$OUTPUT" < "$TMP_DIR/lines"
