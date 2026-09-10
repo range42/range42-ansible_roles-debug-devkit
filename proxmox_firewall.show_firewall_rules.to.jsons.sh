@@ -223,8 +223,11 @@ while IFS= read -r ID; do
       '{level: "guest", action: $action, source: $src, proxmox_node: $node} + . + {rules: 0}' >> "$TMP_DIR/lines"
     continue
   fi
+  # vm_id is taken back from $e, NOT from the reader : the reader echoes the id as it received it, a
+  # string, while the api twin publishes the number of the guest list. The contract is the same
+  # fields AND the same types on both paths, so the numeric id of the guest list wins here too.
   printf '%s\n' "$VM_RAW" | jq -c --arg level guest_rule --arg action "$ACTION" --arg src "$SOURCE_TAG" --argjson e "$ENTRY" \
-    'select(type == "object") | {level: $level} + . + {action: $action, source: $src, vm_name: $e.vm_name, vm_status: $e.vm_status, vm_template: $e.vm_template}' >> "$TMP_DIR/lines"
+    'select(type == "object") | {level: $level} + . + {action: $action, source: $src, vm_id: $e.vm_id, vm_name: $e.vm_name, vm_status: $e.vm_status, vm_template: $e.vm_template}' >> "$TMP_DIR/lines"
 done < <(printf '%s' "$IDS" | jq -r '.[]')
 
 proxmox__inc.show_firewall_rules.render.sh "$OUTPUT" < "$TMP_DIR/lines"
