@@ -91,6 +91,16 @@ printf '{"proxmox_node":"%s","sdn_vnet":"%s","sdn_subnet_id":"%s","sdn_subnet_sn
   | proxmox_network.sdn_vnet.update_sdn_subnet.to.jsons.sh --json
 
 #
+# 2 BIS. THE LIVE COUNTS, READ BEFORE THE APPLY. The apply below is an ifreload : it replays the
+#        post-up hook of EVERY active subnet, so it appends one rule to each of them, not only to
+#        ours. Step 4 puts them back to what they carried here, which is the only target that
+#        leaves them as this composite found them.
+#
+SDN_BEFORE=$(mktemp)
+trap 'rm -f "$SDN_BEFORE"' EXIT
+proxmox_network.datacenter.list_snat_rules.to.jsons.sh --json 2>/dev/null > "$SDN_BEFORE" || true
+
+#
 # 3. Make it live. The devkit waits for the background task, so what follows really runs
 #    against a converged cluster.
 #
@@ -100,9 +110,30 @@ printf '{"proxmox_node":"%s"}\n' "$SDN_NODE" \
 #
 # 4. Reconcile the live rules. NEVER drop this step.
 #
-printf '{"proxmox_node":"%s","sdn_subnet_cidr":"%s","sdn_snat_want":%s}\n' \
-  "$SDN_NODE" "$SDN_CIDR" "$SDN_WANT" \
-  | proxmox_network.sdn_subnet_cidr.delete_extra_snat_rules.to.jsons.sh --json
+#    OURS takes the asked state. EVERY OTHER source network goes back to its own count : not to its
+#    declaration, which would close a subnet nobody asked about. A source network whose live rules
+#    have more than one shape is left alone and named - the primitive matches by source network, so
+#    on that one it could remove the wrong rule.
+#
+{
+  printf '{"proxmox_node":"%s","sdn_subnet_cidr":"%s","sdn_snat_want":%s}\n' \
+    "$SDN_NODE" "$SDN_CIDR" "$SDN_WANT"
+  jq -s -c --arg node "$SDN_NODE" --arg mine "$SDN_CIDR" '
+      group_by(.snat_source)
+      | map({ cidr:  .[0].snat_source,
+              count: ([ .[].snat_count ] | add // 0),
+              mixed: (([ .[].snat_target ] | unique | length) > 1) })
+      | .[]
+      | select(.cidr != $mine)
+      | select(.mixed | not)
+      | { proxmox_node: $node, sdn_subnet_cidr: .cidr, sdn_snat_want: .count }' "$SDN_BEFORE" 2>/dev/null || true
+} | proxmox_network.sdn_subnet_cidr.delete_extra_snat_rules.to.jsons.sh --json
+
+SDN_MIXED=$(jq -s -r --arg mine "$SDN_CIDR" '
+    group_by(.snat_source)
+    | map(select(([ .[].snat_target ] | unique | length) > 1) | .[0].snat_source)
+    | .[] | select(. != $mine)' "$SDN_BEFORE" 2>/dev/null | paste -sd ' ' - || true)
+[ -n "$SDN_MIXED" ] && devkit_utils.text.echo_trace.to.text.to.stderr.sh "left untouched, their live rules have more than one shape : ${SDN_MIXED}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #

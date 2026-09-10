@@ -67,6 +67,39 @@ _step() {
 }
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+## THE LIVE COUNTS, READ BEFORE AN APPLY, AND PUT BACK AFTER IT. An apply is an ifreload : it
+## replays the post-up hook of EVERY active subnet, so it appends one rule to each of them and not
+## only to the network this composite is about. Putting the others back to the count they carried
+## before is the only target that leaves them as this composite found them - their declaration
+## would close a subnet nobody asked about. A source network whose live rules have more than one
+## shape is left alone and named : the primitive matches by source network, so on that one it could
+## remove the wrong rule.
+_snat_snapshot() { # -> a file holding the live rules, one record per source and shape
+  local f ; f=$(mktemp)
+  proxmox_network.datacenter.list_snat_rules.to.jsons.sh --json 2>/dev/null > "$f" || true
+  printf '%s' "$f"
+}
+_snat_restore() { # $1 = the snapshot, $2 = the cidr this composite owns, $3 = its wanted count
+  {
+    printf '{"proxmox_node":"%s","sdn_subnet_cidr":"%s","sdn_snat_want":%s}\n' "$SDN_NODE" "$2" "$3"
+    jq -s -c --arg node "$SDN_NODE" --arg mine "$2" '
+        group_by(.snat_source)
+        | map({ cidr:  .[0].snat_source,
+                count: ([ .[].snat_count ] | add // 0),
+                mixed: (([ .[].snat_target ] | unique | length) > 1) })
+        | .[]
+        | select(.cidr != $mine)
+        | select(.mixed | not)
+        | { proxmox_node: $node, sdn_subnet_cidr: .cidr, sdn_snat_want: .count }' "$1" 2>/dev/null || true
+  } | proxmox_network.sdn_subnet_cidr.delete_extra_snat_rules.to.jsons.sh --json
+  local mixed
+  mixed=$(jq -s -r --arg mine "$2" '
+      group_by(.snat_source)
+      | map(select(([ .[].snat_target ] | unique | length) > 1) | .[0].snat_source)
+      | .[] | select(. != $mine)' "$1" 2>/dev/null | paste -sd ' ' - || true)
+  [ -n "$mixed" ] && devkit_utils.text.echo_trace.to.text.to.stderr.sh "left untouched, their live rules have more than one shape : ${mixed}"
+  rm -f "$1"
+}
 #
 # Existence probes. Read only, and the reason delete is idempotent.
 #
@@ -145,14 +178,13 @@ if [ "$MODE" = create ]; then
     _step add_subnet ok
   fi
 
+  SDN_SNAPSHOT=$(_snat_snapshot)
   printf '{"proxmox_node":"%s"}\n' "$SDN_NODE" \
     | proxmox_network.datacenter.apply_sdn.to.jsons.sh --json
   _step apply ok
 
-  printf '{"proxmox_node":"%s","sdn_subnet_cidr":"%s","sdn_snat_want":%s}\n' \
-    "$SDN_NODE" "$SDN_CIDR" "$SDN_SNAT" \
-    | proxmox_network.sdn_subnet_cidr.delete_extra_snat_rules.to.jsons.sh --json
-  _step reconcile ok "want=$SDN_SNAT"
+  _snat_restore "$SDN_SNAPSHOT" "$SDN_CIDR" "$SDN_SNAT"
+  _step reconcile ok "want=$SDN_SNAT, every other source network back to its own count"
 
 else
 
@@ -184,16 +216,15 @@ else
 
   ## Applied even when everything was skipped : that is what converges the running
   ## config, and it is cheap. It also means a second run is a clean no-op.
+  SDN_SNAPSHOT=$(_snat_snapshot)
   printf '{"proxmox_node":"%s"}\n' "$SDN_NODE" \
     | proxmox_network.datacenter.apply_sdn.to.jsons.sh --json
   _step apply ok
 
   ## want=0 on the way out : a franc teardown does play the post-down, but the snat=0
   ## path does not, and this is the only guard that proves which one happened.
-  printf '{"proxmox_node":"%s","sdn_subnet_cidr":"%s","sdn_snat_want":0}\n' \
-    "$SDN_NODE" "$SDN_CIDR" \
-    | proxmox_network.sdn_subnet_cidr.delete_extra_snat_rules.to.jsons.sh --json
-  _step reconcile ok "want=0"
+  _snat_restore "$SDN_SNAPSHOT" "$SDN_CIDR" 0
+  _step reconcile ok "want=0, every other source network back to its own count"
 
 fi
 
