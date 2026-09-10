@@ -30,13 +30,20 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo OPTIONS
   echo
-  echo "  STDIN :: jsons | $(basename "$0") json|text|table"
+  echo "  STDIN :: jsons | $(basename "$0") json|text|table [<guests label>]"
+  echo
+  echo "  <guests label>   what the guest table covers, as the caller ASKED it (a scenario name, the"
+  echo "                   node, an id) ; the engines build it from the scope of the request. Without"
+  echo "                   it the table keeps its bare title."
   echo
   echo
   exit 1
 fi
 
 MODE="${1:-json}"
+# the title of the guest table says the perimeter that was ASKED. Without it a reader takes the rows
+# for the whole perimeter, when a guest with an empty chain is only reported in the line below.
+GUESTS_LABEL="${2:-}"
 case "$MODE" in
 json | text | table) ;;
 *)
@@ -109,7 +116,7 @@ fi
 
 GU=$(printf '%s\n' "$VIEW_JSON" | jq -c 'select(.level == "guest_rule")')
 if [ -n "$GU" ]; then
-  echo "  guests"
+  if [[ -n "$GUESTS_LABEL" ]]; then echo "  guests  (${GUESTS_LABEL})" ; else echo "  guests" ; fi
   _table guest_rule vm_id:VM_ID:5 vm_name:VM_NAME:25 vm_fw_pos:POS:4 vm_fw_action:ACTION:8 vm_fw_type:TYPE:6 vm_fw_proto:PROTO:6 vm_fw_dport:DPORT:6 vm_fw_source:SOURCE:16 vm_fw_enable:ON:3 vm_fw_comment:COMMENT
 fi
 

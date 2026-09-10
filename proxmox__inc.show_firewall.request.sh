@@ -156,6 +156,9 @@ scenario)
     [ .vms[].vm_id | tonumber ]
     | reduce .[] as $x ([]; if index($x) == null then . + [$x] else . end)' "$MANIFEST" 2>/dev/null) || _fail "cannot read the vm ids of the manifest : ${MANIFEST}"
   [[ "$(printf '%s' "$IDS_JSON" | jq 'length')" -gt 0 ]] || _fail "the manifest declares no vm : ${MANIFEST}"
+  # the name travels with the request : the renderers title their guest table with the perimeter
+  # that was ASKED, not with what happens to have a rule today
+  SCENARIO_NAME=$(jq -r '.scenario // empty' "$MANIFEST" 2>/dev/null || true)
   ;;
 node | dc | all)
   IDS_JSON="null"
@@ -163,10 +166,12 @@ node | dc | all)
 esac
 
 jq -n -c --arg scope "$SCOPE" --arg output "$OUTPUT" --argjson ids "$IDS_JSON" --argjson nodes "$STDIN_NODES_JSON" \
+  --arg scenario_name "${SCENARIO_NAME:-}" \
   '
   {
     scope: $scope,
     output: $output,
     ids: $ids,
-    stdin_nodes: $nodes
+    stdin_nodes: $nodes,
+    scenario_name: (if $scenario_name == "" then null else $scenario_name end)
   }'

@@ -230,4 +230,17 @@ while IFS= read -r ID; do
   fi
 done < <(printf '%s' "$IDS" | jq -r '.[]')
 
-proxmox__inc.show_firewall_rules.render.sh "$OUTPUT" < "$TMP_DIR/lines"
+# the guest table is titled with the perimeter that was ASKED : at scope node a guest with an empty
+# chain only shows in the line below the table, so the rows alone say nothing about the perimeter
+GUESTS_LABEL=$(printf '%s' "$REQ" | jq -r --arg node "$NODE" '
+  if .scope == "scenario" then
+    "scenario: " + (.scenario_name // "?")
+  elif .scope == "vm_id" then
+    (.ids[0] | tostring)
+  elif .scope == "vm_ids" then
+    ((.ids | length | tostring) + " ids on stdin")
+  else
+    ("node " + $node + " : every guest")
+  end')
+
+proxmox__inc.show_firewall_rules.render.sh "$OUTPUT" "$GUESTS_LABEL" < "$TMP_DIR/lines"
