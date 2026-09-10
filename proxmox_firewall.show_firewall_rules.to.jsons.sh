@@ -87,7 +87,9 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo "                     dc_fw_iface, dc_fw_source, dc_fw_dest, dc_fw_proto, dc_fw_dport, dc_fw_sport,"
   echo "                     dc_fw_enable, dc_fw_comment, dc_fw_log ; a field the rule does not carry is absent"
   echo "  level node_rule    the same for the node chain, with the node_fw_ prefix"
-  echo "  level guest_rule   the same for a guest chain, with the vm_fw_ prefix, plus vm_id and vm_name"
+  echo "  level guest_rule   the same for a guest chain, with the vm_fw_ prefix, plus vm_id and vm_name,"
+  echo "                     plus THE VERDICT : vm_fw_in_force_on, the cards this rule is really in force"
+  echo "                     on, and vm_fw_why_not, the named causes when it is in force nowhere"
   echo "  level guest        a guest the node runs whose chain holds no rule (rules: 0)"
   echo "  level absent       an id the node does not run"
   echo "  level error        a guest whose chain could not be read (reason)"
@@ -95,6 +97,11 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo "  A rule that grants nothing is not an accept : read dc_fw_enable and its friends, a disabled"
   echo "  rule still occupies its position. Exit 0 as soon as the two host levels could be read ;"
   echo "  absent, guest and error lines are data, not failures."
+  echo ""
+  echo "  THE VERDICT. A guest filters only when the datacenter switch, its own switch and the card"
+  echo "  flag are all on. A rule naming a card by iface is in force on that card only ; a rule"
+  echo "  without iface is in force on every card that filters. In force nowhere always comes with"
+  echo "  its cause, never a bare no. It costs one more read per guest here, three on the api twin."
   echo ""
   echo PATHS
   echo
@@ -262,12 +269,59 @@ while IFS= read -r ID; do
       + { rules: 0 }' >> "$TMP_DIR/lines"
     continue
   fi
+  ## THE VERDICT, per card. Same reader as the switches view, so the two views cannot disagree : it
+  ## publishes one line per card with the three switches, the card flag, effectively_filtered and
+  ## the named causes. A reader that fails leaves the verdict unknown, it never invents a yes.
+  set +e
+  CARDS_RAW=$(_read proxmox_firewall.vm_id.effective_filtering_state.to.jsons.sh "$(printf '{"vm_id":%s}' "$ID")")
+  crc=$?
+  set -e
+  if [[ "$crc" -ne 0 ]]; then
+    FORCE=$(jq -n -c '{ by_card: {}, filtered: [], why_not: ["the per-card verdict is unreadable"] }')
+  else
+    FORCE=$(printf '%s\n' "$CARDS_RAW" | jq -s -c '
+      [ .[] | select(type == "object" and .vm_network_device != null) ] as $cards
+      | {
+          by_card: ( [ $cards[]
+                       | { key: .vm_network_device,
+                           value: {
+                             filtered: (.effectively_filtered == true),
+                             why_not: (.missing // [])
+                           }
+                         }
+                     ] | from_entries ),
+          filtered: [ $cards[] | select(.effectively_filtered == true) | .vm_network_device ],
+          why_not: ( if ($cards | length) == 0 then
+                       ["no network card"]
+                     else
+                       ( [ $cards[] | (.missing // [])[] ] | unique )
+                     end )
+        }')
+  fi
+
   # vm_id is taken back from $e, NOT from the reader : the reader echoes the id as it received it, a
   # string, while the api twin publishes the number of the guest list. The contract is the same
   # fields AND the same types on both paths, so the numeric id of the guest list wins here too.
-  printf '%s\n' "$VM_RAW" | jq -c --arg level guest_rule --arg action "$ACTION" --arg src "$SOURCE_TAG" --argjson e "$ENTRY" \
+  printf '%s\n' "$VM_RAW" | jq -c --arg level guest_rule --arg action "$ACTION" --arg src "$SOURCE_TAG" --argjson e "$ENTRY" --argjson f "$FORCE" \
     '
+      ## a rule naming a card by iface holds for that card only ; a rule without iface holds for
+      ## every card that filters. The cause is named, so a rule that grants nothing says why.
       select(type == "object")
+      | (.vm_fw_iface // null) as $iface
+      | ( if $iface == null then
+            $f.filtered
+          elif ($f.by_card[$iface].filtered // false) then
+            [ $iface ]
+          else
+            []
+          end ) as $on
+      | ( if ($on | length) > 0 then
+            []
+          elif $iface == null then
+            $f.why_not
+          else
+            ($f.by_card[$iface].why_not // ["no card named " + $iface])
+          end ) as $why
       | { level: $level }
       + .
       + {
@@ -276,7 +330,9 @@ while IFS= read -r ID; do
           vm_id: $e.vm_id,
           vm_name: $e.vm_name,
           vm_status: $e.vm_status,
-          vm_template: $e.vm_template
+          vm_template: $e.vm_template,
+          vm_fw_in_force_on: $on,
+          vm_fw_why_not: $why
         }' >> "$TMP_DIR/lines"
 done < <(printf '%s' "$IDS" | jq -r '.[]')
 

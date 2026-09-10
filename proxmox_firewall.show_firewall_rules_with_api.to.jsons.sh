@@ -45,6 +45,8 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo "  [STDIN :: ids] | $(basename "$0") [--scope vm_id|vm_ids|scenario|node|dc|all] [--json|--text|--table] [vm_id]"
   echo
   echo "  see proxmox_firewall.show_firewall_rules.to.jsons.sh --help for the scopes and the lines ; same contract here"
+  echo "  the per-rule verdict costs three GET more : the datacenter options once, then the guest"
+  echo "  options and the guest config per guest"
   echo "  --request <json>   internal, set by the engine when it delegates : the request already parsed"
   echo
   echo EXAMPLE
@@ -110,10 +112,11 @@ _get() {
 }
 
 
-# usage: _emit_rules <level> <prefix> <extra json>   the twelve fields the reading actions publish,
-# prefixed per level, an absent one omitted as the ansible path omits it
+# usage: _emit_rules <level> <prefix> <extra json> [<per-card verdict json>]   the twelve fields the
+# reading actions publish, prefixed per level, an absent one omitted as the ansible path omits it.
+# With a verdict, each rule also says on WHICH CARDS it is in force, and why not when it is nowhere.
 _emit_rules() {
-  printf '%s' "$BODY" | jq -c --arg level "$1" --arg p "$2" --argjson extra "$3" '
+  printf '%s' "$BODY" | jq -c --arg level "$1" --arg p "$2" --argjson extra "$3" --argjson force "${4:-null}" '
     .data[]? as $r
     | ( {
           pos:     $r.pos,
@@ -132,9 +135,30 @@ _emit_rules() {
         | with_entries(select(.value != null))
         | with_entries(.key |= $p + .)
       ) as $fields
+    | ( if $force == null then
+          {}
+        else
+          ( ($r.iface // null) as $iface
+            | ( if $iface == null then
+                  $force.filtered
+                elif ($force.by_card[$iface].filtered // false) then
+                  [ $iface ]
+                else
+                  []
+                end ) as $on
+            | ( if ($on | length) > 0 then
+                  []
+                elif $iface == null then
+                  $force.why_not
+                else
+                  ($force.by_card[$iface].why_not // ["no card named " + $iface])
+                end ) as $why
+            | { ($p + "in_force_on"): $on, ($p + "why_not"): $why } )
+        end ) as $verdict
     | { level: $level }
     + $extra
-    + $fields'
+    + $fields
+    + $verdict'
 }
 
 : > "$TMP_DIR/lines"
@@ -158,6 +182,19 @@ _emit_rules dc_rule "dc_fw_" "$EXTRA_HOST" >> "$TMP_DIR/lines"
 _get "${BASE_URL}/nodes/${NODE}/firewall/rules"
 [[ "$HTTP_CODE" == "200" ]] || { devkit_utils.text.echo_error.to.text.to.stderr.sh " cannot read the firewall rules of node ${NODE} (http ${HTTP_CODE}) : nothing to report on" ; exit 1 ; }
 _emit_rules node_rule "node_fw_" "$EXTRA_HOST" >> "$TMP_DIR/lines"
+
+## the datacenter switch, read once : it is the first of the three conditions of the verdict
+_get "${BASE_URL}/cluster/firewall/options"
+if [[ "$HTTP_CODE" == "200" ]]; then
+  DC_ENABLE=$(printf '%s' "$BODY" | jq -c '.data.enable // null')
+else
+  DC_ENABLE="null"
+  devkit_utils.text.echo_trace.to.text.to.stderr.sh "cannot read the datacenter firewall options (http ${HTTP_CODE}) : the per-rule verdict will say so"
+fi
+
+## a switch is 0, 1 or null (never set) on both paths ; the card flag likewise
+JQ_DEFS='def sw: if . == null then null else (tostring | tonumber) end;
+         def on: (. != null) and ((. | tostring) != "0") and ((. | tostring) != "");'
 
 _get "${BASE_URL}/nodes/${NODE}/qemu"
 [[ "$HTTP_CODE" == "200" ]] || { devkit_utils.text.echo_error.to.text.to.stderr.sh " cannot list the guests of node ${NODE} (http ${HTTP_CODE}) : nothing to report on" ; exit 1 ; }
@@ -220,8 +257,63 @@ while IFS= read -r ID; do
       vm_status: $e.vm_status,
       vm_template: $e.vm_template
     }')
+  ## THE VERDICT, per card : the guest switch and the card flags, the two reads the switches view
+  ## makes too. A read that fails leaves the verdict unknown, it never invents a yes.
+  RULES_BODY="$BODY"
+  _get "${BASE_URL}/nodes/${NODE}/qemu/${ID}/firewall/options"
+  if [[ "$HTTP_CODE" == "200" ]]; then G_ENABLE=$(printf '%s' "$BODY" | jq -c '.data.enable // null') ; else G_ENABLE="null" ; fi
+  _get "${BASE_URL}/nodes/${NODE}/qemu/${ID}/config"
+  if [[ "$HTTP_CODE" == "200" ]]; then
+    ## netN = "type=MAC,bridge=X,firewall=1,..." parsed like the role and the switches twin do
+    CARDS=$(printf '%s' "$BODY" | jq -c '
+      [ .data
+        | to_entries
+        | map(select(.key | test("^net[0-9]+$")))
+        | sort_by(.key | ltrimstr("net") | tonumber)
+        | .[]
+        | (.value | split(",")) as $parts
+        | ( $parts[1:]
+            | map(select(test("=")) | split("=") | {(.[0]): (.[1:] | join("="))})
+            | add // {}
+          ) as $opts
+        | {
+            device: .key,
+            firewall: ($opts.firewall // null)
+          }
+      ]')
+  else
+    CARDS="null"
+  fi
+  if [[ "$CARDS" == "null" ]]; then
+    FORCE=$(jq -n -c '{ by_card: {}, filtered: [], why_not: ["the per-card verdict is unreadable"] }')
+  else
+    FORCE=$(printf '%s' "$CARDS" | jq -c --argjson dc "$DC_ENABLE" --argjson g "$G_ENABLE" "$JQ_DEFS"'
+      ($dc | sw) as $d
+      | ($g | sw)  as $ge
+      | [ .[]
+          | (.firewall | sw) as $f
+          | {
+              device: .device,
+              filtered: (($d | on) and ($ge | on) and ($f | on)),
+              why_not: ( (if ($d  | on) then [] else ["datacenter_enable"]  end)
+                       + (if ($ge | on) then [] else ["guest_enable"]       end)
+                       + (if ($f  | on) then [] else ["card_firewall_flag"] end) )
+            }
+        ] as $cards
+      | {
+          by_card: ( [ $cards[] | {key: .device, value: {filtered: .filtered, why_not: .why_not}} ] | from_entries ),
+          filtered: [ $cards[] | select(.filtered) | .device ],
+          why_not: ( if ($cards | length) == 0 then
+                       ["no network card"]
+                     else
+                       ( [ $cards[] | .why_not[] ] | unique )
+                     end )
+        }')
+  fi
+  BODY="$RULES_BODY"
+
   BEFORE=$(wc -l < "$TMP_DIR/lines")
-  _emit_rules guest_rule "vm_fw_" "$EXTRA_GUEST" >> "$TMP_DIR/lines"
+  _emit_rules guest_rule "vm_fw_" "$EXTRA_GUEST" "$FORCE" >> "$TMP_DIR/lines"
   if [[ "$(wc -l < "$TMP_DIR/lines")" -eq "$BEFORE" ]]; then
     printf '%s' "$EXTRA_GUEST" | jq -c '
       { level: "guest" }

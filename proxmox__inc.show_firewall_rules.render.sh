@@ -9,6 +9,7 @@
 # the asked form.
 #
 #   json    the lines as they are
+#           (the verdict stays two arrays here : in_force_on and why_not)
 #   text    one line of words per json line
 #   table   three tables, one per level of the firewall, through the shared renderer, then the
 #           guests without a rule, the ids the node does not run, the unreadable ones
@@ -64,12 +65,17 @@ fi
 if [[ "$MODE" == "text" ]]; then
   [ -n "$VIEW_JSON" ] && printf '%s\n' "$VIEW_JSON" | jq -r '
     def cell($v): ($v // "-") | tostring;
+    ## the cards a rule is in force on, or a dash AND the named cause : never a bare no
+    def in_force:
+      if ((.vm_fw_in_force_on // []) | length) > 0 then (.vm_fw_in_force_on | join(","))
+      elif ((.vm_fw_why_not // []) | length) > 0 then ("- " + (.vm_fw_why_not | join(",")))
+      else "-" end;
     if .level == "dc_rule" then
       "datacenter  pos \(cell(.dc_fw_pos))  \(cell(.dc_fw_action))  \(cell(.dc_fw_type))  proto=\(cell(.dc_fw_proto))  dport=\(cell(.dc_fw_dport))  source=\(cell(.dc_fw_source))  enable=\(cell(.dc_fw_enable))  \(cell(.dc_fw_comment))"
     elif .level == "node_rule" then
       "node \(.proxmox_node)  pos \(cell(.node_fw_pos))  \(cell(.node_fw_action))  \(cell(.node_fw_type))  proto=\(cell(.node_fw_proto))  dport=\(cell(.node_fw_dport))  source=\(cell(.node_fw_source))  enable=\(cell(.node_fw_enable))  \(cell(.node_fw_comment))"
     elif .level == "guest_rule" then
-      "vm \(.vm_id) (\(cell(.vm_name)))  pos \(cell(.vm_fw_pos))  \(cell(.vm_fw_action))  \(cell(.vm_fw_type))  proto=\(cell(.vm_fw_proto))  dport=\(cell(.vm_fw_dport))  source=\(cell(.vm_fw_source))  enable=\(cell(.vm_fw_enable))  \(cell(.vm_fw_comment))"
+      "vm \(.vm_id) (\(cell(.vm_name)))  pos \(cell(.vm_fw_pos))  \(cell(.vm_fw_action))  \(cell(.vm_fw_type))  proto=\(cell(.vm_fw_proto))  dport=\(cell(.vm_fw_dport))  source=\(cell(.vm_fw_source))  enable=\(cell(.vm_fw_enable))  \(cell(.vm_fw_comment))  in_force=\(in_force)"
     elif .level == "guest" then
       "vm \(.vm_id) (\(cell(.vm_name))) : no rule in its chain"
     elif .level == "absent" then
@@ -117,7 +123,15 @@ fi
 GU=$(printf '%s\n' "$VIEW_JSON" | jq -c 'select(.level == "guest_rule")')
 if [ -n "$GU" ]; then
   if [[ -n "$GUESTS_LABEL" ]]; then echo "  guests  (${GUESTS_LABEL})" ; else echo "  guests" ; fi
-  _table guest_rule vm_id:VM_ID:5 vm_name:VM_NAME:25 vm_fw_pos:POS:4 vm_fw_action:ACTION:8 vm_fw_type:TYPE:6 vm_fw_proto:PROTO:6 vm_fw_dport:DPORT:6 vm_fw_source:SOURCE:16 vm_fw_enable:ON:3 vm_fw_comment:COMMENT
+  ## the verdict is a derived cell, not a field of the view : the json lines keep their two arrays
+  printf '%s\n' "$GU" \
+    | jq -c '
+        . + { vm_fw_in_force_text:
+                ( if ((.vm_fw_in_force_on // []) | length) > 0 then (.vm_fw_in_force_on | join(","))
+                  elif ((.vm_fw_why_not // []) | length) > 0 then ("- " + (.vm_fw_why_not | join(",")))
+                  else "-" end ) }' \
+    | devkit_utils.jsons.render.to.table.sh vm_id:VM_ID:5 vm_name:VM_NAME:25 vm_fw_pos:POS:4 vm_fw_action:ACTION:8 vm_fw_type:TYPE:6 vm_fw_proto:PROTO:6 vm_fw_dport:DPORT:6 vm_fw_source:SOURCE:16 vm_fw_enable:ON:3 "vm_fw_in_force_text:IN FORCE ON:11" vm_fw_comment:COMMENT
+  echo ""
 fi
 
 NO_RULE=$(printf '%s\n' "$VIEW_JSON" | jq -r 'select(.level == "guest") | .vm_id' | paste -sd ' ' -)
