@@ -294,7 +294,9 @@ while IFS= read -r ID; do
           why_not: ( if ($cards | length) == 0 then
                        ["no network card"]
                      else
-                       ( [ $cards[] | (.missing // [])[] ] | unique )
+                       ( ["datacenter_enable", "guest_enable", "card_firewall_flag"] as $order
+                       | ( [ $cards[] | (.missing // [])[] ] | unique ) as $seen
+                       | ( [ $order[] | select(IN($seen[])) ] + [ $seen[] | select(IN($order[]) | not) ] ) )
                      end )
         }')
   fi
