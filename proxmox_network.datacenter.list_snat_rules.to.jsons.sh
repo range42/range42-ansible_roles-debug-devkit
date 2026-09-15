@@ -109,7 +109,20 @@ fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
+# auto-delegate to the direct ssh fast path when the hypervisor answers : the same switch as
+# the api twins, RANGE42_PROXMOX_API_FORCE=off keeps the ansible slow path
+# the context guard runs first : both paths read the workspace through the same link
+
 proxmox__inc.warmup_checks.sh
+
+if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
+  if proxmox__inc.ssh_reachable.sh ; then
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "hypervisor reachable over ssh - delegating to proxmox_network.datacenter.list_snat_rules_with_ssh.to.jsons.sh"
+    exec proxmox_network.datacenter.list_snat_rules_with_ssh.to.jsons.sh "$@"
+  else
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "hypervisor not reachable over ssh - using ansible slow path"
+  fi
+fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
