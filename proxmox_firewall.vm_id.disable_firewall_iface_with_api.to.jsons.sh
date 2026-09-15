@@ -12,7 +12,8 @@
 #      character untouched (the MAC, the bridge, the tag, the mtu). Already firewall=0 :
 #      nothing is written
 #   3. POST .../qemu/<vm_id>/config             the edited net<N>
-#   4. GET  the stored config AND the running one (?current=1), then REFUSE to report a
+#   4. GET  the stored config AND the running one (?current=1, read again until it follows,
+#      ten seconds at most : a hotplug is not instantaneous), then REFUSE to report a
 #      success that is not one : the flag must read 0, the MAC must not have changed, no
 #      key may be lost, and the running guest must agree (a deferred change filters still until the guest reboots, and still blocks MAC spoofing)
 #
@@ -25,6 +26,8 @@ ACTION="firewall_vm_iface_disable"
 SOURCE_TAG="proxmox-api"
 DEFAULT_OUTPUT_JSON=true
 WANT="0"
+CURRENT_READ_RETRIES=10
+CURRENT_READ_DELAY=1
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -154,9 +157,19 @@ while IFS= read -r LINE ; do
     exit 1
   fi
   AFTER="$(printf '%s' "$BODY" | jq -r --arg k "$KEY" '.data[$k] // ""')"
-  _api_get "${API_URL}/nodes/${NODE}/qemu/${VM_ID}/config?current=1"
+  # the running config follows the stored one through a hotplug that is not instantaneous : read it until it agrees, a
+  # bounded number of times. The role passes the same check only because its tasks take seconds between the write and
+  # the read ; read at once, a card still being replugged reads as deferred and a good write is refused.
   CURRENT=""
-  [[ "$HTTP_CODE" == "200" ]] && CURRENT="$(printf '%s' "$BODY" | jq -r --arg k "$KEY" '.data[$k] // ""')"
+  attempt=0
+  while (( attempt < CURRENT_READ_RETRIES )); do
+    _api_get "${API_URL}/nodes/${NODE}/qemu/${VM_ID}/config?current=1"
+    CURRENT=""
+    [[ "$HTTP_CODE" == "200" ]] && CURRENT="$(printf '%s' "$BODY" | jq -r --arg k "$KEY" '.data[$k] // ""')"
+    [[ -z "$CURRENT" || "$CURRENT" == *"firewall=${WANT}"* ]] && break
+    sleep "$CURRENT_READ_DELAY"
+    attempt=$((attempt + 1))
+  done
 
   VERDICT="$(fw_iface_verdict "$BEFORE" "$AFTER" "$CURRENT" "$WANT")"
   OK="$(printf '%s' "$VERDICT" | jq -r '.is_set and ((.mac_before | length) == 0 or .mac_after == .mac_before) and ((.lost_keys | length) == 0) and .current_agrees')"
