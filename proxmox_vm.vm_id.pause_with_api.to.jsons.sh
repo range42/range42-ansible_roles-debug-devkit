@@ -69,39 +69,9 @@ fi
 # shared context guard : same refusals as the ansible path
 proxmox__inc.warmup_checks.sh
 
-if [[ -z "${RANGE42_ANSIBLE_ROLES__DEVKITS_DIR:-}" ]]; then
-  echo "ERROR: RANGE42_ANSIBLE_ROLES__DEVKITS_DIR is not set. Activate a workspace first (range42-context use ...)." >&2
-  exit 1
-fi
-if [[ -z "${RANGE42_VAULT_PASSWORD_FILE:-}" ]]; then
-  echo "ERROR: RANGE42_VAULT_PASSWORD_FILE is not set. Activate a workspace first (range42-context use ...)." >&2
-  exit 1
-fi
+# the api credentials of the active workspace come from the shared include (sourced, resolved through PATH)
+source proxmox__inc.api_auth.sh
 
-VAULT_FILE="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/secrets/default_vault.yml"
-VAULT_PW="$RANGE42_VAULT_PASSWORD_FILE"
-
-[[ -r "$VAULT_FILE" ]] || { echo "ERROR: vault file not readable: $VAULT_FILE" >&2 ; exit 1 ; }
-[[ -r "$VAULT_PW"   ]] || { echo "ERROR: vault password file not readable: $VAULT_PW" >&2 ; exit 1 ; }
-
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-
-VAULT_YAML="$(ansible-vault view "$VAULT_FILE" --vault-password-file "$VAULT_PW")"
-
-API_HOST="$(printf '%s\n'         "$VAULT_YAML" | yq -r '.proxmox_api_host')"
-API_USER="$(printf '%s\n'         "$VAULT_YAML" | yq -r '.proxmox_api_user')"
-API_TOKEN_ID="$(printf '%s\n'     "$VAULT_YAML" | yq -r '.proxmox_api_token_id')"
-API_TOKEN_SECRET="$(printf '%s\n' "$VAULT_YAML" | yq -r '.proxmox_api_token_secret')"
-NODE="$(printf '%s\n'             "$VAULT_YAML" | yq -r '.proxmox_node')"
-
-for v in API_HOST API_USER API_TOKEN_ID API_TOKEN_SECRET NODE ; do
-  if [[ -z "${!v}" || "${!v}" == "null" ]]; then
-    echo "ERROR: missing vault key for $v" >&2
-    exit 1
-  fi
-done
-
-AUTH_HEADER="Authorization: PVEAPIToken=${API_USER}!${API_TOKEN_ID}=${API_TOKEN_SECRET}"
 BASE_URL="https://${API_HOST}/api2/json/nodes/${NODE}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####

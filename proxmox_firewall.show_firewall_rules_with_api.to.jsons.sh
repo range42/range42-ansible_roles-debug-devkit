@@ -76,24 +76,8 @@ OUTPUT=$(printf '%s' "$REQ" | jq -r '.output')
 # the api credentials and the node come from the vault of the active workspace
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-VAULT_FILE="${RANGE42_ANSIBLE_ROLES__DEVKITS_DIR%/}/secrets/default_vault.yml"
-VAULT_PW="$RANGE42_VAULT_PASSWORD_FILE"
-[[ -r "$VAULT_FILE" ]] || { echo "ERROR: vault file not readable: $VAULT_FILE" >&2 ; exit 1 ; }
+source proxmox__inc.api_auth.sh
 
-VAULT_YAML="$(ansible-vault view "$VAULT_FILE" --vault-password-file "$VAULT_PW")"
-API_HOST="$(printf '%s\n'         "$VAULT_YAML" | yq -r '.proxmox_api_host')"
-API_USER="$(printf '%s\n'         "$VAULT_YAML" | yq -r '.proxmox_api_user')"
-API_TOKEN_ID="$(printf '%s\n'     "$VAULT_YAML" | yq -r '.proxmox_api_token_id')"
-API_TOKEN_SECRET="$(printf '%s\n' "$VAULT_YAML" | yq -r '.proxmox_api_token_secret')"
-NODE="$(printf '%s\n'             "$VAULT_YAML" | yq -r '.proxmox_node')"
-for v in API_HOST API_USER API_TOKEN_ID API_TOKEN_SECRET NODE; do
-  if [[ -z "${!v}" || "${!v}" == "null" ]]; then
-    echo "ERROR: missing vault key for $v" >&2
-    exit 1
-  fi
-done
-
-AUTH_HEADER="Authorization: PVEAPIToken=${API_USER}!${API_TOKEN_ID}=${API_TOKEN_SECRET}"
 BASE_URL="https://${API_HOST}/api2/json"
 
 # a proxmox_node given on stdin is ignored : the node comes from the vault (one node per workspace)
