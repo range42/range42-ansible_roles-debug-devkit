@@ -19,7 +19,8 @@
 #           path of proxmox__inc.snat_rules.node.sh, the one file that goes to the node).
 #
 # IT DEFINES :
-#           _ssh_probe                 rc 0 when the node answers `true` over ssh, silent
+#           _ssh_probe                 rc 0 when the node answers `true` over ssh, silent, and
+#                                      without touching the caller's stdin (ssh -n)
 #           _node_script_run <args>    copies the node script to /tmp on the node, runs it
 #                                      there with the arguments, removes it, in one session
 #                                      after the copy. NODE_OUT : what the script printed.
@@ -84,8 +85,10 @@ SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=5 -o LogLevel=ERROR)
 NODE_SCRIPT="$(command -v proxmox__inc.snat_rules.node.sh || true)"
 [[ -n "$NODE_SCRIPT" && -r "$NODE_SCRIPT" ]] || { echo "ERROR: proxmox__inc.snat_rules.node.sh not found on PATH : the ssh twins have nothing to send to the node." >&2 ; exit 1 ; }
 
+# ssh forwards the caller's stdin to the remote command : the probe runs in the facade BEFORE the twin
+# and would eat the json lines the twin is about to read. -n takes stdin from /dev/null, always.
 _ssh_probe() {
-  ssh "${SSH_OPTS[@]}" "$SSH_TARGET" true >/dev/null 2>&1
+  ssh -n "${SSH_OPTS[@]}" "$SSH_TARGET" true >/dev/null 2>&1
 }
 
 _node_script_run() {
@@ -105,7 +108,7 @@ _node_script_run() {
     NODE_RC=255 ; NODE_OUT="" ; NODE_ERR="cannot copy the node script to ${SSH_TARGET}:${remote} : $(tr '\n' ' ' < "$err")" ; rm -f "$err" ; return 1
   fi
   # run then remove, whatever the run's status : one command, one session
-  NODE_OUT="$(ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "bash '${remote}' $* ; rc=\$? ; rm -f '${remote}' ; exit \$rc" 2>"$err")"
+  NODE_OUT="$(ssh -n "${SSH_OPTS[@]}" "$SSH_TARGET" "bash '${remote}' $* ; rc=\$? ; rm -f '${remote}' ; exit \$rc" 2>"$err")"
   rc=$?
   NODE_RC=$rc
   NODE_ERR="$(tr '\n' ' ' < "$err")"
