@@ -11,11 +11,13 @@
 #   2. EDIT the string it read : any firewall key removed, firewall=1 appended, every other
 #      character untouched (the MAC, the bridge, the tag, the mtu). Already firewall=1 :
 #      nothing is written
-#   3. POST .../qemu/<vm_id>/config             the edited net<N>
-#   4. GET  the stored config AND the running one (?current=1, read again until it follows,
-#      ten seconds at most : a hotplug is not instantaneous), then REFUSE to report a
-#      success that is not one : the flag must read 1, the MAC must not have changed, no
-#      key may be lost, and the running guest must agree (a deferred change filters nothing until the guest reboots)
+#   3. POST .../qemu/<vm_id>/config             the edited net<N> ; PVE answers with a TASK, the write is
+#      asynchronous : wait for it, bounded, before reading anything back
+#   4. GET  the stored config AND the running one (?current=1), both read again until they carry
+#      the flag, ten seconds at most : the worker writes the file and replugs the card after its
+#      answer, neither is instantaneous. Then REFUSE to report a success that is not one : the
+#      flag must read 1, the MAC must not have changed, no key may be lost, and the running
+#      guest must agree (a deferred change filters nothing until the guest reboots)
 #
 # The same flag carries PVE's MAC anti-spoof, and the two cannot be separated.
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -148,25 +150,47 @@ while IFS= read -r LINE ; do
       _error "POST config ${KEY} failed for vm ${VM_ID} (http ${HTTP_CODE}) : ${BODY}"
       exit 1
     fi
+    # the write is ASYNCHRONOUS : PVE answers with a task, and its worker writes the config file and replugs the card
+    # after the answer. Read at once, the stored config is still the old one while the running one already follows,
+    # and a good write is refused. Wait for the task, bounded, before reading anything back.
+    UPID="$(printf '%s' "$BODY" | jq -r '.data // empty')"
+    if [[ "$UPID" == UPID:* ]]; then
+      UPID_ENC="$(jq -rn --arg u "$UPID" '$u|@uri')"
+      _trace "waiting for the proxmox task that writes ${KEY} of vm ${VM_ID} : the api answers before the config is written, a read-back without this wait is wrong, not slow"
+      TASK_STATUS="" ; TASK_EXIT=""
+      attempt=0
+      while (( attempt < CURRENT_READ_RETRIES )); do
+        _api_get "${API_URL}/nodes/${NODE}/tasks/${UPID_ENC}/status"
+        TASK_STATUS="$(printf '%s' "$BODY" | jq -r '.data.status // empty')"
+        TASK_EXIT="$(printf '%s' "$BODY" | jq -r '.data.exitstatus // empty')"
+        [[ "$TASK_STATUS" == "stopped" ]] && break
+        sleep "$CURRENT_READ_DELAY"
+        attempt=$((attempt + 1))
+      done
+      if [[ "$TASK_STATUS" != "stopped" || "$TASK_EXIT" != "OK" ]]; then
+        _error "the config task of vm ${VM_ID} did not finish cleanly (status ${TASK_STATUS:-unknown}, exit ${TASK_EXIT:-unknown}) : read the card before trusting it. ${UPID}"
+        exit 1
+      fi
+    fi
   fi
 
-  # 4. the read-back, twice
-  _api_get "${API_URL}/nodes/${NODE}/qemu/${VM_ID}/config"
-  if [[ "$HTTP_CODE" != "200" ]]; then
-    _error "the card may have been rewritten but the stored config could not be read back (http ${HTTP_CODE}) : ${BODY}"
-    exit 1
-  fi
-  AFTER="$(printf '%s' "$BODY" | jq -r --arg k "$KEY" '.data[$k] // ""')"
-  # the running config follows the stored one through a hotplug that is not instantaneous : read it until it agrees, a
-  # bounded number of times. The role passes the same check only because its tasks take seconds between the write and
-  # the read ; read at once, a card still being replugged reads as deferred and a good write is refused.
-  CURRENT=""
+  # 4. the read-back, twice : the stored config and the running one, both read again until they carry the flag, a
+  # bounded number of times. The task above has written the file ; the hotplug that makes the running guest follow
+  # is not instantaneous either. The role passes the same check only because its tasks take seconds between the
+  # write and the read ; read at once, a good write is refused.
+  AFTER="" ; CURRENT=""
   attempt=0
   while (( attempt < CURRENT_READ_RETRIES )); do
+    _api_get "${API_URL}/nodes/${NODE}/qemu/${VM_ID}/config"
+    if [[ "$HTTP_CODE" != "200" ]]; then
+      _error "the card may have been rewritten but the stored config could not be read back (http ${HTTP_CODE}) : ${BODY}"
+      exit 1
+    fi
+    AFTER="$(printf '%s' "$BODY" | jq -r --arg k "$KEY" '.data[$k] // ""')"
     _api_get "${API_URL}/nodes/${NODE}/qemu/${VM_ID}/config?current=1"
     CURRENT=""
     [[ "$HTTP_CODE" == "200" ]] && CURRENT="$(printf '%s' "$BODY" | jq -r --arg k "$KEY" '.data[$k] // ""')"
-    [[ -z "$CURRENT" || "$CURRENT" == *"firewall=${WANT}"* ]] && break
+    [[ "$AFTER" == *"firewall=${WANT}"* && ( -z "$CURRENT" || "$CURRENT" == *"firewall=${WANT}"* ) ]] && break
     sleep "$CURRENT_READ_DELAY"
     attempt=$((attempt + 1))
   done
