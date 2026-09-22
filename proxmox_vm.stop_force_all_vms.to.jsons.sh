@@ -23,7 +23,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - Stop (force) vm_id vm - Execute the specified $ACTION action via Ansible (all vms) "
+  echo "  $(basename "$0") - Stop (force) ALL vms - Execute the specified $ACTION action via Ansible (all vms) "
   echo
   echo OPTIONS
   echo

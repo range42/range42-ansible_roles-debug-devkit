@@ -144,8 +144,11 @@ Each filename follows the structure:
 ├── proxmox_cluster.*             # Cluster-level operations (tags)
 ├── devkit_ansible.*              # Ansible helpers (inventory, proxmox node)
 ├── devkit_transform.*            # JSON transformers (filter, append, remove keys)
-├── devkit_utils.*                # Text utilities (echo_error, echo_warning, etc.)
+├── devkit_utils.*                # Text utilities (echo_error, echo_warning, etc.) and the json-lines table renderer
+├── devkit_manifest.*             # Scenario manifest readers : vm id or ip by name, vms and ips by network or by role
+├── devkit_proxmox.*              # STDIN normalizers for json-lines pipelines
 ├── proxmox__inc.*                # Internal shared includes (sourced by other scripts, not called directly)
+├── _activate.sh                  # Sourced to activate the devkits : a venv with ansible, paramiko and cryptography (Ubuntu 24.04 paramiko issue)
 │
 ├── examples/                     # JSON examples for VM/LXC creation and firewall rules
 ├── callback_plugins/             # Ansible callback plugins (no_skipped output)
@@ -164,12 +167,26 @@ Plus: get config (CPU, RAM, CDROM), usage stats, bulk operations (start/stop/pau
 Per-VM, per-node, and datacenter-level firewall management.
 Rules, aliases, enable/disable at each level.
 
+The views and the gestures `range42-context` uses are composites of this family, API-first :
+- `proxmox_firewall.{scenario,datacenter,proxmox_node,vm_ids}.show_firewall.to.jsons.sh` : the switches (datacenter, node, guest, card flag) and the effective filtering state per guest ; `show_firewall_rules` : the rules of the three chains with what is in force. The engines `proxmox_firewall.show_firewall[_rules].to.jsons.sh` read the ids on stdin ; their `_with_api` twins answer from the Proxmox API, the ansible path stays the fallback.
+- `proxmox_firewall.vm_ids.{arm,disarm}.to.jsons.sh` and `proxmox_firewall.proxmox_node.{arm,disarm}.to.jsons.sh` : the arming sequences (anti-lockout accepts first, then the switches and the card flags), each unit action having a `_with_api` twin that waits for the Proxmox config task before reading a card back.
+- `devkit_utils.jsons.render.to.table.sh` renders any json-lines stream as the table `range42-context` prints ; `proxmox__inc.firewall_chain.sh` holds the chain predicate the role shares (`fw_chain_verdict`).
+
+### Networks and SDN (`proxmox_network.*`)
+Interfaces of a VM or a node (`vm_id.*_interfaces_vm`, `node_name.*_interfaces_node`) and the SDN objects at the datacenter level : `add_sdn_zone`, `add_sdn_vnet`, `sdn_vnet.add_sdn_subnet`, `list_sdn_{zones,vnets,subnets}`, `sdn_vnet.update_sdn_subnet`, `delete_sdn_*`, `apply_sdn` (waits for the task), plus the live SNAT rules of the node read over ssh (`datacenter.list_snat_rules`, `sdn_subnet_cidr.delete_extra_snat_rules`, mirrored on the role's shell blocks through `proxmox__inc.snat_rules.node.sh`).
+
+Composites, API-first, behind the `range42-context networks-*` commands :
+- `proxmox_network.{scenario,datacenter,sdn_vnet,sdn_vnets}.show_sdn.to.jsons.sh` : zone, vnet, subnet, SNAT count, isolation, per network (`proxmox__inc.sdn_network.to.jsons.sh`).
+- `proxmox_network.sdn_subnet_id.{enable,disable,toggle}_outgoing_nat.to.jsons.sh` : update the subnet, apply once, reconcile the live SNAT rules of every declared subnet (`proxmox__inc.sdn_outgoing_nat.to.jsons.sh`) - an apply replays the `post-up` of every active subnet, so the reconciliation is not optional.
+- `proxmox_network.datacenter.{create,delete}_sdn_network.to.jsons.sh` : a whole zone up or down, in the only order Proxmox accepts (subnet, vnet, zone, apply).
+
 ### Storage & Templates (`proxmox_storage.*`, `proxmox_template.*`)
 List storage, ISOs, templates. Download ISOs, import cloud-init images, convert to template.
 
 ### Ansible helpers (`devkit_ansible.*`)
 - `get_proxmox_node.to.jsons.sh` — Query Proxmox node info via Ansible
 - `show_ansible_inventory.to.text.sh` — Display current inventory
+- `open_vault.to.file.sh` — Decrypt the vault of the active workspace to a file
 
 ### Snapshots (`proxmox_snapshot_vm.*`, `proxmox_snapshot_lxc.*`)
 Create, delete, list, and revert snapshots for both VMs and LXC containers.

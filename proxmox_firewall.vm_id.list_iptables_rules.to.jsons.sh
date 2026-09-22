@@ -7,7 +7,7 @@
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 set -euo pipefail
-  ACTION="firewall_vm_list_iptables_rule"
+ACTION="firewall_vm_list_iptables_rule"
 DEFAULT_OUTPUT_JSON=true
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -54,7 +54,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo "                     $(basename "$0") [-h|--help] "
   echo "  STDIN :: [VM_ID] | $(basename "$0") [--json]    - force output as json *default"
   echo "  STDIN :: [VM_ID] | $(basename "$0") [--text]    - force output as text"
-  echo ""no
+  echo ""
   echo EXAMPLE
   echo
   echo "$(show_example)"

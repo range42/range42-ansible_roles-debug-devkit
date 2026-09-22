@@ -85,54 +85,17 @@ done
 # sanity checks on the workspace environment
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-if [[ -z "${RANGE42_ANSIBLE_ROLES__DEVKITS_DIR:-}" ]]; then
-  echo "ERROR: RANGE42_ANSIBLE_ROLES__DEVKITS_DIR is not set. Activate a workspace first (range42-context use ...)." >&2
-  exit 1
-fi
+# shared context guard : same refusals as the ansible path
+proxmox__inc.warmup_checks.sh
 
-if [[ -z "${RANGE42_VAULT_PASSWORD_FILE:-}" ]]; then
-  echo "ERROR: RANGE42_VAULT_PASSWORD_FILE is not set. Activate a workspace first (range42-context use ...)." >&2
-  exit 1
-fi
-
-VAULT_FILE="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/secrets/default_vault.yml"
-VAULT_PW="$RANGE42_VAULT_PASSWORD_FILE"
-
-if [[ ! -f "$VAULT_FILE" ]]; then
-  echo "ERROR: vault file not found: $VAULT_FILE" >&2
-  exit 1
-fi
-
-if [[ ! -f "$VAULT_PW" ]]; then
-  echo "ERROR: vault password file not found: $VAULT_PW" >&2
-  exit 1
-fi
-
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-# decrypt the vault once, then yq the fields we need
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-
-VAULT_YAML=$(ansible-vault view "$VAULT_FILE" --vault-password-file "$VAULT_PW")
-
-API_HOST=$(printf '%s\n' "$VAULT_YAML" | yq -r '.proxmox_api_host')
-API_USER=$(printf '%s\n' "$VAULT_YAML" | yq -r '.proxmox_api_user')
-API_TOKEN_ID=$(printf '%s\n' "$VAULT_YAML" | yq -r '.proxmox_api_token_id')
-API_TOKEN_SECRET=$(printf '%s\n' "$VAULT_YAML" | yq -r '.proxmox_api_token_secret')
-NODE=$(printf '%s\n' "$VAULT_YAML" | yq -r '.proxmox_node')
-
-for v in API_HOST API_USER API_TOKEN_ID API_TOKEN_SECRET NODE; do
-  if [[ -z "${!v}" || "${!v}" == "null" ]]; then
-    echo "ERROR: vault key for $v is empty or missing." >&2
-    exit 1
-  fi
-done
+# the api credentials of the active workspace come from the shared include (sourced, resolved through PATH)
+source proxmox__inc.api_auth.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # call the Proxmox API : GET /api2/json/nodes/{node}/qemu
 # validate_certs: no in the role => curl -sk here (skip TLS verification)
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-AUTH_HEADER="Authorization: PVEAPIToken=${API_USER}!${API_TOKEN_ID}=${API_TOKEN_SECRET}"
 URL="https://${API_HOST}/api2/json/nodes/${NODE}/qemu"
 
 RESPONSE=$(curl -sk -H "$AUTH_HEADER" "$URL") || {

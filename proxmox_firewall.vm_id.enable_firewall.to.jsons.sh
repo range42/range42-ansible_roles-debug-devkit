@@ -55,7 +55,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo "                     $(basename "$0") [-h|--help] "
   echo "  STDIN :: [VM_ID] | $(basename "$0") [--json]    - force output as json *default"
   echo "  STDIN :: [VM_ID] | $(basename "$0") [--text]    - force output as text"
-  echo ""no
+  echo ""
   echo EXAMPLE
   echo
   echo "$(show_example)"
@@ -66,7 +66,21 @@ fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
+# auto-delegate to the direct API fast path when reachable
+# override with RANGE42_PROXMOX_API_FORCE=off to keep the ansible slow path
+# the context guard runs first : both paths read the vault through the same link
+
 proxmox__inc.warmup_checks.sh
+
+if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
+  if proxmox__inc.api_reachable.sh ; then
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API reachable - delegating to proxmox_firewall.vm_id.enable_firewall_with_api.to.jsons.sh"
+    exec proxmox_firewall.vm_id.enable_firewall_with_api.to.jsons.sh "$@"
+  else
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API not reachable - using ansible slow path"
+  fi
+fi
+
 proxmox__inc.warmup_checks_stdin.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -100,30 +114,42 @@ JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "ST
 
 printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
+  # enrich json with vm_name
+  VM_NAME=$(
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      proxmox_vm.vm_id.list_vm_and_extract_vm_name.to.jsons.sh |
+      jq -r '.vm_name // empty'
+  )
+
+  # merge jsons
+
+  NEW_CURRENT_JSON_LINE=$(
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      jq -c --arg jq_vm_name_v "$VM_NAME" '. + { ("vm_name"): $jq_vm_name_v }'
+  )
+
+  # update current json line
+  CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
+
+  # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
+  # exit 0
+
   if [[ "$OUTPUT_JSON" == true ]]; then
 
-    # enrich json with vm_name
-    VM_NAME=$(
-      printf '%s\n' "$CURRENT_JSON_LINE" |
-        proxmox_vm.vm_id.list_vm_and_extract_vm_name.to.jsons.sh |
-        jq -r '.vm_name // empty'
-    )
-
-    # merge jsons
-
-    NEW_CURRENT_JSON_LINE=$(
-      printf '%s\n' "$CURRENT_JSON_LINE" |
-        jq -c --arg jq_vm_name_v "$VM_NAME" '. + { ("vm_name"): $jq_vm_name_v }'
-    )
-
-    # update current json line
-    CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
-
-    # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
-    # exit 0
-
+    # The shared normaliser keeps only the key named after the action, and that key is built
+    # by the last task of the play. So when the play stops early nothing reaches stdout, and
+    # the role's own message is discarded upstream of here : do not look for it in this file.
+    _dk_rc=0
     printf '%s\n' "$CURRENT_JSON_LINE" |
-      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" || _dk_rc=$?
+
+    if [ "$_dk_rc" -ne 0 ]; then
+      devkit_utils.text.echo_error.to.text.to.stderr.sh \
+        "stopped without printing anything (rc=${_dk_rc}). TWO causes are possible and they are NOT the same : the guard refused BEFORE touching anything, or the change went through and a later step failed."
+      devkit_utils.text.echo_error.to.text.to.stderr.sh \
+        "read the switch to tell them apart : proxmox_firewall.vm_id.list_options.to.jsons.sh . A vm_fw_opt_enable of 0 means nothing was changed. A 1 means the firewall IS armed despite this error, and only the reporting failed. Then run the same command with --text to see which step stopped the play."
+      exit "$_dk_rc"
+    fi
 
   else
 

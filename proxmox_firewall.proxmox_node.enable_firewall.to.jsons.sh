@@ -50,7 +50,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo "                            $(basename "$0") [-h|--help] "
   echo "  STDIN :: [proxmox_node] | $(basename "$0") [--json]    - force output as json *default"
   echo "  STDIN :: [proxmox_node] | $(basename "$0") [--text]    - force output as text"
-  echo ""no
+  echo ""
   echo EXAMPLE
   echo
   echo "$(show_example)"
@@ -61,7 +61,21 @@ fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
+# auto-delegate to the direct API fast path when reachable
+# override with RANGE42_PROXMOX_API_FORCE=off to keep the ansible slow path
+# the context guard runs first : both paths read the vault through the same link
+
 proxmox__inc.warmup_checks.sh
+
+if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
+  if proxmox__inc.api_reachable.sh ; then
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API reachable - delegating to proxmox_firewall.proxmox_node.enable_firewall_with_api.to.jsons.sh"
+    exec proxmox_firewall.proxmox_node.enable_firewall_with_api.to.jsons.sh "$@"
+  else
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API not reachable - using ansible slow path"
+  fi
+fi
+
 proxmox__inc.warmup_checks_stdin.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -100,8 +114,20 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
     # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
     # exit 0
 
+    # The shared normaliser keeps only the key named after the action, and that key is built
+    # by the last task of the play. So when the play stops early nothing reaches stdout, and
+    # the role's own message is discarded upstream of here : do not look for it in this file.
+    _dk_rc=0
     printf '%s\n' "$CURRENT_JSON_LINE" |
-      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" || _dk_rc=$?
+
+    if [ "$_dk_rc" -ne 0 ]; then
+      devkit_utils.text.echo_error.to.text.to.stderr.sh \
+        "stopped without printing anything (rc=${_dk_rc}). TWO causes are possible and they are NOT the same : the guard refused BEFORE touching anything, or the change went through and a later step failed."
+      devkit_utils.text.echo_error.to.text.to.stderr.sh \
+        "read the switch to tell them apart : proxmox_firewall.proxmox_node.list_options.to.jsons.sh . A node_fw_opt_enable of 0 means nothing was changed. A 1 means the firewall IS armed despite this error, and only the reporting failed. Then run the same command with --text to see which step stopped the play."
+      exit "$_dk_rc"
+    fi
 
   else
 

@@ -48,14 +48,14 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - Enable vm firewall - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - Disable vm firewall - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo
   echo "                     $(basename "$0") [-h|--help] "
   echo "  STDIN :: [VM_ID] | $(basename "$0") [--json]    - force output as json *default"
   echo "  STDIN :: [VM_ID] | $(basename "$0") [--text]    - force output as text"
-  echo ""no
+  echo ""
   echo EXAMPLE
   echo
   echo "$(show_example)"
@@ -66,7 +66,21 @@ fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
+# auto-delegate to the direct API fast path when reachable
+# override with RANGE42_PROXMOX_API_FORCE=off to keep the ansible slow path
+# the context guard runs first : both paths read the vault through the same link
+
 proxmox__inc.warmup_checks.sh
+
+if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
+  if proxmox__inc.api_reachable.sh ; then
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API reachable - delegating to proxmox_firewall.vm_id.disable_firewall_with_api.to.jsons.sh"
+    exec proxmox_firewall.vm_id.disable_firewall_with_api.to.jsons.sh "$@"
+  else
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API not reachable - using ansible slow path"
+  fi
+fi
+
 proxmox__inc.warmup_checks_stdin.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -100,27 +114,27 @@ JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "ST
 
 printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
 
+  # enrich json with vm_name
+  VM_NAME=$(
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      proxmox_vm.vm_id.list_vm_and_extract_vm_name.to.jsons.sh |
+      jq -r '.vm_name // empty'
+  )
+
+  # merge jsons
+
+  NEW_CURRENT_JSON_LINE=$(
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      jq -c --arg jq_vm_name_v "$VM_NAME" '. + { ("vm_name"): $jq_vm_name_v }'
+  )
+
+  # update current json line
+  CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
+
+  # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
+  # exit 0
+
   if [[ "$OUTPUT_JSON" == true ]]; then
-
-    # enrich json with vm_name
-    VM_NAME=$(
-      printf '%s\n' "$CURRENT_JSON_LINE" |
-        proxmox_vm.vm_id.list_vm_and_extract_vm_name.to.jsons.sh |
-        jq -r '.vm_name // empty'
-    )
-
-    # merge jsons
-
-    NEW_CURRENT_JSON_LINE=$(
-      printf '%s\n' "$CURRENT_JSON_LINE" |
-        jq -c --arg jq_vm_name_v "$VM_NAME" '. + { ("vm_name"): $jq_vm_name_v }'
-    )
-
-    # update current json line
-    CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
-
-    # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
-    # exit 0
 
     printf '%s\n' "$CURRENT_JSON_LINE" |
       proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"

@@ -98,7 +98,7 @@ done
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::iface_model" "STR::iface_bridge" "STR::proxmox_node" "STR::action")
+JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::iface_model" "STR::iface_bridge" "STR::iface_firewall" "STR::iface_link_down" "STR::proxmox_node" "STR::action")
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
