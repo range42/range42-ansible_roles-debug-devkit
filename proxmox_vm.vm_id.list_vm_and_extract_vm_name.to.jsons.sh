@@ -25,7 +25,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - list VM status - Execute the specified $ACTION action via Ansible - return vm_id as TEXT"
+  echo "  $(basename "$0") - list VM status and extract vm_name - Execute the specified $ACTION action via Ansible - return vm_id as TEXT"
   echo
   echo OPTIONS
   echo
@@ -44,8 +44,23 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
 fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+# auto-delegate to the direct API fast path when reachable
+# override with RANGE42_PROXMOX_API_FORCE=off to keep the ansible slow path
+# the context guard runs first : both paths read the vault through the same link
 
 proxmox__inc.warmup_checks.sh
+
+if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
+  if proxmox__inc.api_reachable.sh ; then
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API reachable - delegating to proxmox_vm.vm_id.list_vm_and_extract_vm_name_with_api.to.jsons.sh"
+    exec proxmox_vm.vm_id.list_vm_and_extract_vm_name_with_api.to.jsons.sh "$@"
+  else
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API not reachable - using ansible slow path"
+  fi
+fi
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
 proxmox__inc.warmup_checks_stdin.sh
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####

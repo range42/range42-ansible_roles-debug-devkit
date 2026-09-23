@@ -70,8 +70,20 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
 fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+# auto-delegate to the direct API fast path when reachable
+# override with RANGE42_PROXMOX_API_FORCE=off to keep the ansible slow path
+# the context guard runs first : both paths read the vault through the same link
 
 proxmox__inc.warmup_checks.sh
+
+if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
+  if proxmox__inc.api_reachable.sh ; then
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API reachable - delegating to proxmox_vm.list_with_api.to.jsons.sh"
+    exec proxmox_vm.list_with_api.to.jsons.sh "$@"
+  else
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API not reachable - using ansible slow path"
+  fi
+fi
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 #
@@ -122,7 +134,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r NODE_JSON; do
 
       printf '%s\n' "$NODE_JSON" |
         proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-        jq '.[]' |
+        jq -c '.[]' |
         devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta" |
         devkit_transform.jsons.key_field_greper.to.jsons.sh "vm_name" "$ARG_VM_NAME_FILTER"
 
@@ -130,7 +142,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r NODE_JSON; do
 
       printf '%s\n' "$NODE_JSON" |
         proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-        jq '.[]' |
+        jq -c '.[]' |
         devkit_transform.jsons.remove_key.to.jsons.sh "vm_meta"
 
     fi

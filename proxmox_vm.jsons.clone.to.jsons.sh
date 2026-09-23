@@ -44,7 +44,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo NAME
   echo
   echo
-  echo "  $(basename "$0") - clone LXC - require CONFIG_JSON - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - clone VM - require CONFIG_JSON - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo

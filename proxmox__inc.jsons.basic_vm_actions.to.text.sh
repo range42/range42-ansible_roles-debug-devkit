@@ -33,8 +33,10 @@ fi
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 EXTRA_VAR=""
-DEBUG=true
-# DEBUG=false
+# the DEBUG block writes /tmp/debug on EVERY invocation - fixed path, clobbered by any
+# concurrent run. Turn it on by hand, for the time of a diagnostic, never by default.
+DEBUG=false
+# DEBUG=true
 
 inject_yaml_var() {
   local KEY="$1"
@@ -83,8 +85,8 @@ DEFAULT_OPEN_VAULT_PW_FILE_PATH="${RANGE42_VAULT_PASSWORD_FILE:-/tmp/vault/vault
 # CURRENT_ANSIBLE_CONFIG="./ansible.cfg"
 CURRENT_ANSIBLE_CONFIG="$RANGE42_ANSIBLE_ROLES__DEVKITS_DIR/ansible.cfg"
 
-ARG_ACTION="${1:-}"
 # ARG_NODE_NAME="${2:-}"
+ARG_ACTION="${1:-}"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
@@ -160,7 +162,6 @@ if [ ! -t 0 ]; then
 
       assign_if_not_empty "lxc_bridge" "$line" ".lxc_bridge"
       assign_if_not_empty "lxc_cores" "$line" ".lxc_cores"
-      assign_if_not_empty "lxc_disk_size" "$line" ".vm_lxc_disk_sizecpu"
       assign_if_not_empty "lxc_dns_primary" "$line" ".lxc_dns_primary"
       assign_if_not_empty "lxc_dns_secondary" "$line" ".lxc_dns_secondary"
       assign_if_not_empty "lxc_gateway" "$line" ".lxc_gateway"
@@ -207,15 +208,172 @@ if [ ! -t 0 ]; then
       assign_if_not_empty "vm_fw_pos" "$line" ".vm_fw_pos"
       assign_if_not_empty "vm_fw_log" "$line" ".vm_fw_log"
 
+      # fw - the log readers take four optional paging keys per level, and the ssh port of
+      # the reachability assert is a parameter : undeclared here, they were silently dropped
+      # between the wrapper and the playbook - the help advertised them, nothing arrived.
+      assign_if_not_empty "vm_fw_log_limit" "$line" ".vm_fw_log_limit"
+      assign_if_not_empty "vm_fw_log_start" "$line" ".vm_fw_log_start"
+      assign_if_not_empty "vm_fw_log_since" "$line" ".vm_fw_log_since"
+      assign_if_not_empty "vm_fw_log_until" "$line" ".vm_fw_log_until"
+      assign_if_not_empty "node_fw_log_limit" "$line" ".node_fw_log_limit"
+      assign_if_not_empty "node_fw_log_start" "$line" ".node_fw_log_start"
+      assign_if_not_empty "node_fw_log_since" "$line" ".node_fw_log_since"
+      assign_if_not_empty "node_fw_log_until" "$line" ".node_fw_log_until"
+      assign_if_not_empty "vm_fw_ssh_port" "$line" ".vm_fw_ssh_port"
+
+      # fw - vm level - default ssh rules
+      #
+      # The action has a default for each of these four, so an undeclared key does not
+      # crash it, it silently keeps the default instead of the value the caller passed.
+
+      assign_if_not_empty "vm_fw_ssh_accept_pos" "$line" ".vm_fw_ssh_accept_pos"
+      assign_if_not_empty "vm_fw_mgmt_source" "$line" ".vm_fw_mgmt_source"
+      assign_if_not_empty "vm_fw_ssh_accept_comment" "$line" ".vm_fw_ssh_accept_comment"
+      assign_if_not_empty "vm_fw_drop_all_pos" "$line" ".vm_fw_drop_all_pos"
+      assign_if_not_empty "vm_fw_drop_all_comment" "$line" ".vm_fw_drop_all_comment"
+
       # fw - alias
 
       assign_if_not_empty "vm_fw_alias_cidr" "$line" ".vm_fw_alias_cidr"
       assign_if_not_empty "vm_fw_alias_name" "$line" ".vm_fw_alias_name"
       assign_if_not_empty "vm_fw_alias_comment" "$line" ".vm_fw_alias_comment"
 
+      # fw - node level
+      #
+      # Every key an action consumes MUST be declared here, otherwise it is dropped
+      # between the JSON line and the playbook and the action fails on an undefined
+      # variable. Adding an action to the allowed list is not enough : its PARAMETERS
+      # have to be declared too, and in BOTH helpers of this family : the json one and
+      # this text one are two independent lists, a key added to only one makes the
+      # action work in one output mode and fail in the other.
+
+      assign_if_not_empty "node_fw_action" "$line" ".node_fw_action"
+      assign_if_not_empty "node_fw_type" "$line" ".node_fw_type"
+      assign_if_not_empty "node_fw_iface" "$line" ".node_fw_iface"
+      assign_if_not_empty "node_fw_source" "$line" ".node_fw_source"
+      assign_if_not_empty "node_fw_dest" "$line" ".node_fw_dest"
+      assign_if_not_empty "node_fw_proto" "$line" ".node_fw_proto"
+      assign_if_not_empty "node_fw_dport" "$line" ".node_fw_dport"
+      assign_if_not_empty "node_fw_sport" "$line" ".node_fw_sport"
+      assign_if_not_empty "node_fw_enable" "$line" ".node_fw_enable"
+      assign_if_not_empty "node_fw_comment" "$line" ".node_fw_comment"
+      assign_if_not_empty "node_fw_pos" "$line" ".node_fw_pos"
+      assign_if_not_empty "node_fw_log" "$line" ".node_fw_log"
+
+      # fw - node level - anti-lockout
+
+      assign_if_not_empty "node_fw_api_port" "$line" ".node_fw_api_port"
+      assign_if_not_empty "node_fw_api_pos" "$line" ".node_fw_api_pos"
+      assign_if_not_empty "node_fw_api_comment" "$line" ".node_fw_api_comment"
+      assign_if_not_empty "node_fw_ssh_port" "$line" ".node_fw_ssh_port"
+      assign_if_not_empty "node_fw_ssh_pos" "$line" ".node_fw_ssh_pos"
+      assign_if_not_empty "node_fw_ssh_comment" "$line" ".node_fw_ssh_comment"
+      assign_if_not_empty "node_fw_mgmt_source" "$line" ".node_fw_mgmt_source"
+
+      # fw - datacenter level
+      #
+      # Meme regle qu'au-dessus : toute cle qu'une action consomme DOIT etre declaree ici,
+      # sinon elle est jetee entre la ligne JSON et le playbook. Et elle doit l'etre dans les
+      # DEUX normaliseurs, sinon le chemin --text la perd en silence.
+
+      assign_if_not_empty "dc_fw_action" "$line" ".dc_fw_action"
+      assign_if_not_empty "dc_fw_type" "$line" ".dc_fw_type"
+      assign_if_not_empty "dc_fw_iface" "$line" ".dc_fw_iface"
+      assign_if_not_empty "dc_fw_source" "$line" ".dc_fw_source"
+      assign_if_not_empty "dc_fw_dest" "$line" ".dc_fw_dest"
+      assign_if_not_empty "dc_fw_proto" "$line" ".dc_fw_proto"
+      assign_if_not_empty "dc_fw_dport" "$line" ".dc_fw_dport"
+      assign_if_not_empty "dc_fw_sport" "$line" ".dc_fw_sport"
+      assign_if_not_empty "dc_fw_enable" "$line" ".dc_fw_enable"
+      assign_if_not_empty "dc_fw_comment" "$line" ".dc_fw_comment"
+      assign_if_not_empty "dc_fw_log" "$line" ".dc_fw_log"
+      assign_if_not_empty "dc_fw_pos" "$line" ".dc_fw_pos"
+      assign_if_not_empty "dc_fw_api_port" "$line" ".dc_fw_api_port"
+      assign_if_not_empty "dc_fw_ssh_port" "$line" ".dc_fw_ssh_port"
+      assign_if_not_empty "dc_fw_api_pos" "$line" ".dc_fw_api_pos"
+      assign_if_not_empty "dc_fw_ssh_pos" "$line" ".dc_fw_ssh_pos"
+      assign_if_not_empty "dc_fw_alias_name" "$line" ".dc_fw_alias_name"
+      assign_if_not_empty "dc_fw_alias_cidr" "$line" ".dc_fw_alias_cidr"
+      assign_if_not_empty "dc_fw_alias_comment" "$line" ".dc_fw_alias_comment"
+      assign_if_not_empty "dc_fw_opt_enable" "$line" ".dc_fw_opt_enable"
+      assign_if_not_empty "dc_fw_opt_policy_in" "$line" ".dc_fw_opt_policy_in"
+      assign_if_not_empty "dc_fw_opt_policy_out" "$line" ".dc_fw_opt_policy_out"
+      assign_if_not_empty "dc_fw_opt_ebtables" "$line" ".dc_fw_opt_ebtables"
+      assign_if_not_empty "dc_fw_opt_log_ratelimit" "$line" ".dc_fw_opt_log_ratelimit"
+      assign_if_not_empty "node_fw_opt_enable" "$line" ".node_fw_opt_enable"
+      assign_if_not_empty "node_fw_opt_log_level_in" "$line" ".node_fw_opt_log_level_in"
+      assign_if_not_empty "node_fw_opt_log_level_out" "$line" ".node_fw_opt_log_level_out"
+      assign_if_not_empty "node_fw_opt_nosmurfs" "$line" ".node_fw_opt_nosmurfs"
+      assign_if_not_empty "node_fw_opt_tcpflags" "$line" ".node_fw_opt_tcpflags"
+      assign_if_not_empty "node_fw_opt_ndp" "$line" ".node_fw_opt_ndp"
+      assign_if_not_empty "node_fw_opt_nf_conntrack_max" "$line" ".node_fw_opt_nf_conntrack_max"
+      assign_if_not_empty "node_fw_opt_protection_synflood" "$line" ".node_fw_opt_protection_synflood"
+      assign_if_not_empty "vm_fw_opt_enable" "$line" ".vm_fw_opt_enable"
+      assign_if_not_empty "vm_fw_opt_policy_in" "$line" ".vm_fw_opt_policy_in"
+      assign_if_not_empty "vm_fw_opt_policy_out" "$line" ".vm_fw_opt_policy_out"
+      assign_if_not_empty "vm_fw_opt_ipfilter" "$line" ".vm_fw_opt_ipfilter"
+      assign_if_not_empty "vm_fw_opt_macfilter" "$line" ".vm_fw_opt_macfilter"
+      assign_if_not_empty "vm_fw_opt_dhcp" "$line" ".vm_fw_opt_dhcp"
+      assign_if_not_empty "vm_fw_opt_ndp" "$line" ".vm_fw_opt_ndp"
+      assign_if_not_empty "vm_fw_opt_radv" "$line" ".vm_fw_opt_radv"
+      assign_if_not_empty "vm_fw_opt_log_level_in" "$line" ".vm_fw_opt_log_level_in"
+      assign_if_not_empty "vm_fw_opt_log_level_out" "$line" ".vm_fw_opt_log_level_out"
+      assign_if_not_empty "dc_fw_mgmt_source" "$line" ".dc_fw_mgmt_source"
+      assign_if_not_empty "dc_fw_api_comment" "$line" ".dc_fw_api_comment"
+      assign_if_not_empty "dc_fw_ssh_comment" "$line" ".dc_fw_ssh_comment"
+
+      # sdn - zone
+
+      assign_if_not_empty "sdn_zone" "$line" ".sdn_zone"
+      assign_if_not_empty "sdn_zone_type" "$line" ".sdn_zone_type"
+      assign_if_not_empty "sdn_zone_nodes" "$line" ".sdn_zone_nodes"
+      assign_if_not_empty "sdn_zone_mtu" "$line" ".sdn_zone_mtu"
+      assign_if_not_empty "sdn_zone_dhcp" "$line" ".sdn_zone_dhcp"
+
+      # sdn - vnet
+
+      assign_if_not_empty "sdn_vnet" "$line" ".sdn_vnet"
+      assign_if_not_empty "sdn_vnet_alias" "$line" ".sdn_vnet_alias"
+      assign_if_not_empty "sdn_vnet_tag" "$line" ".sdn_vnet_tag"
+      assign_if_not_empty "sdn_vnet_vlanaware" "$line" ".sdn_vnet_vlanaware"
+      assign_if_not_empty "sdn_vnet_isolate_ports" "$line" ".sdn_vnet_isolate_ports"
+
+      # sdn - subnet
+      #
+      # sdn_subnet is the CIDR, used on creation. sdn_subnet_id is the id Proxmox derives
+      # from it, <zone>-<network>-<mask>, and is what an update or a delete addresses.
+      # Two distinct keys on purpose : passing one where the other is expected fails.
+
+      assign_if_not_empty "sdn_subnet" "$line" ".sdn_subnet"
+      assign_if_not_empty "sdn_subnet_id" "$line" ".sdn_subnet_id"
+      assign_if_not_empty "sdn_subnet_cidr" "$line" ".sdn_subnet_cidr"
+      assign_if_not_empty "sdn_subnet_type" "$line" ".sdn_subnet_type"
+      assign_if_not_empty "sdn_subnet_gateway" "$line" ".sdn_subnet_gateway"
+      assign_if_not_empty "sdn_subnet_snat" "$line" ".sdn_subnet_snat"
+      assign_if_not_empty "sdn_subnet_dhcp_range" "$line" ".sdn_subnet_dhcp_range"
+      assign_if_not_empty "sdn_subnet_dhcp_dns_server" "$line" ".sdn_subnet_dhcp_dns_server"
+
+      # sdn - apply polling and snat reconciliation
+
+      assign_if_not_empty "sdn_apply_poll_retries" "$line" ".sdn_apply_poll_retries"
+      assign_if_not_empty "sdn_apply_poll_delay" "$line" ".sdn_apply_poll_delay"
+      assign_if_not_empty "sdn_snat_want" "$line" ".sdn_snat_want"
+
       # net iface - vm
       assign_if_not_empty "iface_model" "$line" ".iface_model"
       assign_if_not_empty "iface_bridge" "$line" ".iface_bridge"
+
+      ## Consumed by add_network_vm behind an "is defined". Undeclared here, the key is read
+      ## then dropped and the caller gets no error : the parameter is simply unreachable.
+      ## Five of this group stay closed (tag, queues, rate, trunks, model_mac).
+      ##
+      ## iface_macaddr is open because its absence CUTS guests, measured : changing a card
+      ## attribute means delete then add, and without it the add cannot resend the MAC.
+      ## Proxmox draws a new one, the netplan match on macaddress fails, and the guest loses
+      ## its network with nothing showing on the Proxmox side.
+      assign_if_not_empty "iface_firewall" "$line" ".iface_firewall"
+      assign_if_not_empty "iface_macaddr" "$line" ".iface_macaddr"
+      assign_if_not_empty "iface_link_down" "$line" ".iface_link_down"
       assign_if_not_empty "vm_vmnet_id" "$line" ".vm_vmnet_id"
 
       # net iface - node

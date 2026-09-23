@@ -55,7 +55,7 @@ if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
   echo "                     $(basename "$0") [-h|--help] "
   echo "  STDIN :: [VM_ID] | $(basename "$0") [--json]    - force output as json *default"
   echo "  STDIN :: [VM_ID] | $(basename "$0") [--text]    - force output as text"
-  echo ""no
+  echo ""
   echo EXAMPLE
   echo
   echo "$(show_example)"
@@ -106,7 +106,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
     # exit 0
 
     printf '%s\n' "$CURRENT_JSON_LINE" |
-      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" 
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION"
       # |
       # jq -c ".[]"
 

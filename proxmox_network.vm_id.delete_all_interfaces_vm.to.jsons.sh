@@ -112,15 +112,15 @@ if ((${#VM_INTERFACE[@]} == 0)); then
   exit 0
 fi
 
-for VM_INTERFACE in "${VM_INTERFACE[@]}"; do
+for VM_INTERFACE_LINE in "${VM_INTERFACE[@]}"; do
 
   if [[ "$OUTPUT_JSON" == true ]]; then # json mode.
 
-    printf '%s\n' "$VM_INTERFACE" |
+    printf '%s\n' "$VM_INTERFACE_LINE" |
       proxmox_network.vm_id.delete_interfaces_vm.to.jsons.sh
 
   else # text output mode  - debug
-    printf '%s\n' "$VM_INTERFACE" |
+    printf '%s\n' "$VM_INTERFACE_LINE" |
       proxmox_network.vm_id.delete_interfaces_vm.to.jsons.sh --text
   fi
 

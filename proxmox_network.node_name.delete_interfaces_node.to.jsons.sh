@@ -46,7 +46,7 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo
   echo NAME
   echo
-  echo "  $(basename "$0") - list NODE network interfaces - Execute the specified $ACTION action via Ansible "
+  echo "  $(basename "$0") - Delete a NODE network interface - Execute the specified $ACTION action via Ansible "
   echo
   echo OPTIONS
   echo

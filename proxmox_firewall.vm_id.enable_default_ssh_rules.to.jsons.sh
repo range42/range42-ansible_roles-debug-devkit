@@ -1,0 +1,172 @@
+#!/bin/bash
+
+#
+# Install the default ssh rule set on ONE guest : accept 22/tcp inbound, drop the rest.
+#
+# The action was delivered, then found DEAD - its guard tested a different action name than
+# the dispatch used, so it was always skipped - then corrected, and left with no wrapper and
+# no caller. This is that wrapper.
+#
+# ORDER IS THE WHOLE SAFETY OF IT
+# The accept goes above the drop. An accept below a drop accepts nothing, and the guest
+# loses ssh. Both positions are passed explicitly by the action rather than left to the API.
+#
+# AND BOTH RULES ARE POSTED ACTIVE
+# A rule stored without the enable field is disabled by Proxmox : present in the
+# configuration, absent from the compiled chain, granting nothing. This action used to post
+# both of its rules that way. Measured and corrected the 2026-08-27.
+#
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
+#
+# OUTPUT : ONE LINE PER RULE, and `vm_fw_rule` says which one - "ssh_accept" or "drop_all".
+# `vm_fw_already_present` is the one to select on : jq 'select(.vm_fw_already_present == false)'
+# lists exactly what got posted. The drop carries no `vm_fw_dport` : it is a bare DROP and has
+# no port, so the key is absent rather than empty.
+#
+
+set -euo pipefail
+ACTION="firewall_vm_enable_default_ssh_rules"
+DEFAULT_OUTPUT_JSON=true
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
+show_example() {
+  echo "  :: WITH VALUES FROM STDIN (as plain text) "
+  echo
+  echo "    echo \"100\" | $(basename "$0") "
+  echo "    echo \"101\" | $(basename "$0") --json"
+  echo "    echo \"102\" | $(basename "$0") --text"
+  echo
+  echo "    cat /tmp/vm_id.text | $(basename "$0")"
+  echo
+
+  echo "  :: WITH VALUEs FROM STDIN (as JSON lines)"
+  echo
+
+  local STDIN_JSON_DATA=(
+    '{"vm_id":100}'
+    '{"proxmox_node":"px-testing", "vm_id":100}'
+  )
+
+  for json in "${STDIN_JSON_DATA[@]}"; do
+    devkit_utils.text.echo_json_helper.to.text.sh "$json"
+  done | sed '$ s/$/ | '"$(basename "$0")"'/'
+
+  printf '%s | %s\n' "$(devkit_utils.text.echo_json_helper.to.text.sh "${STDIN_JSON_DATA[-1]}")" "$(basename "$0") --json"
+
+  echo ""
+  echo "    cat /tmp/vm_list.json | $(basename "$0")"
+  echo
+  echo "    proxmox_vm.list.to.jsons.sh          | jq -r '.vm_id' | $(basename "$0")"
+  echo "    proxmox_vm.list.to.jsons.sh group_02 | jq -r '.vm_id' | $(basename "$0")"
+}
+
+if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then
+  echo
+  echo
+  echo NAME
+  echo
+  echo "  $(basename "$0") - Install the default ssh rule set on one guest - Execute the specified $ACTION action via Ansible "
+  echo
+  echo OPTIONS
+  echo
+  echo "                     $(basename "$0") [-h|--help] "
+  echo "  STDIN :: [VM_ID] | $(basename "$0") [--json]    - force output as json *default"
+  echo "  STDIN :: [VM_ID] | $(basename "$0") [--text]    - force output as text"
+  echo ""
+  echo EXAMPLE
+  echo
+  echo "$(show_example)"
+  echo
+  echo
+  exit 1
+fi
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
+# auto-delegate to the direct API fast path when reachable
+# override with RANGE42_PROXMOX_API_FORCE=off to keep the ansible slow path
+# the context guard runs first : both paths read the vault through the same link
+
+proxmox__inc.warmup_checks.sh
+
+if [[ "${RANGE42_PROXMOX_API_FORCE:-auto}" != "off" ]]; then
+  if proxmox__inc.api_reachable.sh ; then
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API reachable - delegating to proxmox_firewall.vm_id.enable_default_ssh_rules_with_api.to.jsons.sh"
+    exec proxmox_firewall.vm_id.enable_default_ssh_rules_with_api.to.jsons.sh "$@"
+  else
+    devkit_utils.text.echo_trace.to.text.to.stderr.sh "proxmox API not reachable - using ansible slow path"
+  fi
+fi
+
+proxmox__inc.warmup_checks_stdin.sh
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+#
+# define output type
+#
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
+OUTPUT_JSON="$DEFAULT_OUTPUT_JSON"
+
+case "${1:-}" in
+--json)
+  OUTPUT_JSON=true
+  ;;
+--text)
+  OUTPUT_JSON=false
+  ;;
+"") ;;
+*)
+  devkit_utils.text.echo_error.to.text.to.stderr.sh "wrong number of arguments."
+  show_example
+  exit 1
+  ;;
+esac
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
+JSON_LINE_REQ=$(devkit_proxmox.STDIN.stdin_or_jsons.to.jsons.sh "INT::vm_id" "STR::proxmox_node" "STR::vm_name" "STR::action")
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+
+printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r CURRENT_JSON_LINE; do
+
+  # enrich json with vm_name
+  VM_NAME=$(
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      proxmox_vm.vm_id.list_vm_and_extract_vm_name.to.jsons.sh |
+      jq -r '.vm_name // empty'
+  )
+
+  # merge jsons
+
+  NEW_CURRENT_JSON_LINE=$(
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      jq -c --arg jq_vm_name_v "$VM_NAME" '. + { ("vm_name"): $jq_vm_name_v }'
+  )
+
+  # update current json line
+  CURRENT_JSON_LINE=$NEW_CURRENT_JSON_LINE
+
+  # devkit_utils.text.echo_trace.to.text.to.stderr.sh "$CURRENT_JSON_LINE"
+  # exit 0
+
+  if [[ "$OUTPUT_JSON" == true ]]; then
+
+    # This action publishes a LIST - one object per rule it manages - so the wrapper flattens
+    # it like every other list wrapper. One json object per line, in and out.
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
+      jq -c ".[]"
+
+  else
+
+    printf '%s\n' "$CURRENT_JSON_LINE" |
+      proxmox__inc.jsons.basic_vm_actions.to.text.sh "$ACTION"
+
+  fi
+
+done

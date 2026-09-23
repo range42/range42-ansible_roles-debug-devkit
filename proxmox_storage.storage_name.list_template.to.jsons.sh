@@ -123,7 +123,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r NODE_JSON; do
 
       printf '%s\n' "$NODE_JSON" |
         proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-        jq '.[]' |
+        jq -c '.[]' |
         devkit_transform.jsons.key_field_greper.to.jsons.sh "storage_name" "$ARG_STORAGE_NAME"
 
     else
@@ -132,7 +132,7 @@ printf '%s\n' "$JSON_LINE_REQ" | while IFS=$'\n' read -r NODE_JSON; do
 
       printf '%s\n' "$NODE_JSON" |
         proxmox__inc.jsons.basic_vm_actions.to.jsons.sh "$ACTION" |
-        jq '.[]' # |
+        jq -c '.[]' # |
 
     fi
 
