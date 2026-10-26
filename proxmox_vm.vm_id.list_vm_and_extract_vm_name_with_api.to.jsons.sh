@@ -10,7 +10,6 @@
 
 set -euo pipefail
 
-ACTION="vm_list"
 SOURCE_TAG="proxmox-api"
 DEFAULT_OUTPUT_JSON=true
 

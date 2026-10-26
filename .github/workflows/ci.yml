@@ -1,0 +1,21 @@
+name: CI
+on:
+  push:
+    branches: [main, dev, 'feat/**', 'fix/**']
+  pull_request:
+    branches: [main, dev]
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie-slim
+    steps:
+      - run: apt-get update && apt-get install -y --no-install-recommends ca-certificates git shellcheck
+      - uses: actions/checkout@v6
+      - run: find . -name '*.sh' -exec shellcheck --severity=warning {} +
+
+  # No ansible-lint job: despite the repo name there are no roles or
+  # playbooks here — only shell scripts, ansible.cfg variants and Python
+  # callback plugins. Re-add it (profile: basic + .ansible-lint config,
+  # like the sibling repos) if Ansible YAML ever lands in this tree.
