@@ -91,6 +91,7 @@ _ssh_probe() {
   ssh -n "${SSH_OPTS[@]}" "$SSH_TARGET" true >/dev/null 2>&1
 }
 
+# shellcheck disable=SC2034  # NODE_OUT, NODE_RC, NODE_ERR are read by the scripts that source this file
 _node_script_run() {
   local a remote scp_opts=() err rc
   for a in "$@" ; do
