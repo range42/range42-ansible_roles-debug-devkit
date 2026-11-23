@@ -422,6 +422,8 @@ if [ ! -t 0 ]; then
 
       # ARG_ACTION=$(printf "%s\n" "$line" | jq -r ".action")
       PROXMOX_NODE=$(printf "%s\n" "$line" | jq -r ".proxmox_node")
+      # the inventory names the Proxmox host after the codename, not after the node
+      ANSIBLE_HOST="${RANGE42_INFRASTRUCTURE_CODENAME:-$PROXMOX_NODE}"
 
       #### DEBUG purpose.
 
@@ -438,7 +440,7 @@ if [ ! -t 0 ]; then
             (
                 ANSIBLE_CONFIG="$ANSIBLE_CONFIG" \
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<PLAYBOOK
-            - hosts: $PROXMOX_NODE
+            - hosts: $ANSIBLE_HOST
               gather_facts: false
               vars_files:
                 - "$PLAYBOOK_VARS_FILE"
@@ -462,7 +464,7 @@ EOF
       (
         ANSIBLE_CONFIG="$ANSIBLE_CONFIG" \
           ansible-playbook -i "$INVENTORY" "${VAULT_ARGS[@]}" /dev/stdin <<EOF
-      - hosts: $PROXMOX_NODE
+      - hosts: $ANSIBLE_HOST
         gather_facts: false
         vars_files:
           - "$PLAYBOOK_VARS_FILE"

@@ -52,7 +52,8 @@ NEW_KEY_FIELD_NAME_FROM_STDIN=$(extract_new_key_field_name_from_stdin "$1")
 
 JSON_LINE_REQ=$(
 
-    { [ -t 0 ] && printf "%s\n" "$VAULT_NODE" || cat -; } |
+    # a non-TTY stdin can be empty (script, agent, cron) : fall back to the vault node
+    { [ -t 0 ] && printf "%s\n" "$VAULT_NODE" || { _STDIN=$(cat -); [ -n "$_STDIN" ] && printf "%s\n" "$_STDIN" || printf "%s\n" "$VAULT_NODE"; }; } |
         jq -R -c --arg key "$NEW_KEY_FIELD_NAME_FROM_STDIN" '
             (fromjson? // .) as $v_to_evaluate |
                 if ($v_to_evaluate | type) == "object" then
