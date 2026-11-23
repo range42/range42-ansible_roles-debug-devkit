@@ -16,7 +16,7 @@ set -euo pipefail
 show_example() {
   echo "    $(basename "$0") 2001 --table"
   echo "    echo 2001 | $(basename "$0")"
-  echo "    echo '{"vm_id":2001}' | $(basename "$0") --text"
+  echo "    echo '{\"vm_id\":2001}' | $(basename "$0") --text"
 }
 
 if [ "${1-}" = '-h' ] || [ "${1-}" = '--help' ]; then

@@ -69,6 +69,7 @@ API_HOST="$(printf '%s\n'         "$VAULT_YAML" | yq -r '.proxmox_api_host')"
 API_USER="$(printf '%s\n'         "$VAULT_YAML" | yq -r '.proxmox_api_user')"
 API_TOKEN_ID="$(printf '%s\n'     "$VAULT_YAML" | yq -r '.proxmox_api_token_id')"
 API_TOKEN_SECRET="$(printf '%s\n' "$VAULT_YAML" | yq -r '.proxmox_api_token_secret')"
+# shellcheck disable=SC2034  # read by the scripts that source this file
 NODE="$(printf '%s\n'             "$VAULT_YAML" | yq -r '.proxmox_node')"
 
 for v in API_HOST API_USER API_TOKEN_ID API_TOKEN_SECRET NODE ; do
@@ -79,6 +80,7 @@ for v in API_HOST API_USER API_TOKEN_ID API_TOKEN_SECRET NODE ; do
 done
 
 AUTH_HEADER="Authorization: PVEAPIToken=${API_USER}!${API_TOKEN_ID}=${API_TOKEN_SECRET}"
+# shellcheck disable=SC2034  # read by the scripts that source this file
 API_URL="https://${API_HOST}/api2/json"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -86,6 +88,7 @@ API_URL="https://${API_HOST}/api2/json"
 # line of the output, after the body, so one call gives both without a temporary file.
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
+# shellcheck disable=SC2034  # HTTP_CODE and BODY are read by the scripts that source this file
 _api_call() {
   local method="$1" url="$2" body="${3:-}" out
   if [[ -n "$body" ]]; then
